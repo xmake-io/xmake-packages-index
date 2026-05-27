@@ -1,7 +1,8 @@
-import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-router'
+import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 
-// Hash history keeps the site fully static — no server rewrites required on
-// gh-pages or any plain object-storage host.
+// Clean URLs (no '#'). For each route, build.sh's prerender step emits a real
+// static HTML file (e.g. dist/packages/zlib/index.html), so any host that
+// serves static files — including GitHub Pages — resolves the URL natively.
 const routes: RouteRecordRaw[] = [
   { path: '/', name: 'home', component: () => import('@/views/HomeView.vue') },
   { path: '/packages', name: 'packages', component: () => import('@/views/PackagesView.vue') },
@@ -16,11 +17,9 @@ const routes: RouteRecordRaw[] = [
 ]
 
 export const router = createRouter({
-  history: createWebHashHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes,
-  scrollBehavior(to, from, saved) {
-    if (saved) return saved
-    if (to.hash) return { el: to.hash }
-    return { top: 0 }
+  scrollBehavior(_to, _from, saved) {
+    return saved ?? { top: 0 }
   },
 })
