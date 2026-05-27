@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#42b883" />
+    <meta name="description" content="Browse, search and integrate C/C++ packages from xmake-repo." />
+    <title>Xmake Packages</title>
+    <script>
+      // Apply theme before paint to avoid the dark/light flash.
+      (function () {
+        try {
+          var saved = localStorage.getItem('xmake-pkgs-theme')
+          var prefers = window.matchMedia('(prefers-color-scheme: dark)').matches
+          var theme = saved || (prefers ? 'dark' : 'light')
+          document.documentElement.classList.toggle('dark', theme === 'dark')
+          document.documentElement.dataset.theme = theme
+        } catch (e) {}
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

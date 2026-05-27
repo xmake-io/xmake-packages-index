@@ -1,0 +1,33 @@
+{
+  "site": {
+    "name": "Xmake Packages",
+    "title": "Xmake Packages Index",
+    "description": "Browse, search and integrate C/C++ packages from xmake-repo.",
+    "url": "https://packages.xmake.io",
+    "lang": "en-US",
+    "github": "https://github.com/xmake-io/xmake-repo",
+    "indexRepo": "https://github.com/xmake-io/xmake-packages-index",
+    "docs": "https://xmake.io"
+  },
+  "build": {
+    "repoUrl": "https://github.com/xmake-io/xmake-repo.git",
+    "repoCheckoutDir": ".cache/xmake-repo",
+    "dataOutDir": "web/public/data",
+    "latestWindowDays": 7
+  },
+  "ads": {
+    "wwadsId": "239",
+    "carbon": {
+      "code": "CW7DTKQJ",
+      "placement": "xmakeio"
+    }
+  },
+  "ui": {
+    "brand": {
+      "primary": "#42b883",
+      "primaryLight": "#4acf93",
+      "primaryDark": "#33a06f"
+    },
+    "perPage": 30
+  }
+}

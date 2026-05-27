@@ -1,0 +1,101 @@
+@import './tokens.css';
+@import './themes.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--c-bg);
+  color: var(--c-text-1);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+a {
+  color: var(--c-brand-3);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+a:hover {
+  color: var(--c-brand-2);
+}
+
+h1, h2, h3, h4 {
+  color: var(--c-text-1);
+  margin: 0;
+  line-height: 1.3;
+}
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  background: var(--c-code-bg);
+  color: var(--c-code-text);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Shared container — used by all top-level pages. */
+.container {
+  width: 100%;
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 0 var(--space-6);
+}
+
+@media (max-width: 640px) {
+  .container { padding: 0 var(--space-4); }
+}
+
+/* Utility — small inline pill used for platforms/license/version chips. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--c-tag-bg);
+  color: var(--c-tag-text);
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.chip--brand {
+  background: var(--c-brand-soft);
+  color: var(--c-brand-3);
+}
+
+/* Common card surface for package items, ad slot, etc. */
+.card {
+  background: var(--c-bg-elv);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.card:hover {
+  border-color: var(--c-brand-3);
+  box-shadow: var(--shadow-sm);
+}
