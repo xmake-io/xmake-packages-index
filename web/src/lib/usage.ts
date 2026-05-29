@@ -1,5 +1,7 @@
-// Generate copy-paste snippets for installing/integrating a package.
-// Kept separate so the snippet templates can evolve without touching components.
+// Generate copy-paste integration snippets for a package, grouped by the
+// workflow a user is in (CLI install, xmake project, virtual env shell).
+// Each group renders as its own card in PackageUsage so users can scan to the
+// relevant section instead of guessing which of N unlabeled snippets to copy.
 
 import type { PackageDetail } from '@/types'
 
@@ -9,28 +11,48 @@ export interface Snippet {
   code: string
 }
 
-export function snippetsFor(pkg: PackageDetail): Snippet[] {
+export interface SnippetGroup {
+  id: string
+  title: string
+  description: string
+  snippets: Snippet[]
+}
+
+export function snippetGroups(pkg: PackageDetail): SnippetGroup[] {
   const ver = pkg.latest_version
   const name = pkg.name
   const withVer = ver ? `${name} ${ver}` : name
 
+  const xmakeProject = ver
+    ? `add_requires("${name} ${ver}")\n\ntarget("demo")\n    set_kind("binary")\n    add_files("src/*.cpp")\n    add_packages("${name}")`
+    : `add_requires("${name}")\n\ntarget("demo")\n    set_kind("binary")\n    add_files("src/*.cpp")\n    add_packages("${name}")`
+
   return [
     {
-      label: 'xrepo install',
-      language: 'bash',
-      code: `xrepo install "${withVer}"`,
+      id: 'xrepo',
+      title: 'Install with xrepo',
+      description:
+        'Standalone CLI install, useful for one-off use or quick testing without a project.',
+      snippets: [
+        { label: 'install', language: 'bash', code: `xrepo install "${withVer}"` },
+        { label: 'show info', language: 'bash', code: `xrepo info "${name}"` },
+      ],
     },
     {
-      label: 'xmake.lua',
-      language: 'lua',
-      code: ver
-        ? `add_requires("${name} ${ver}")\n\ntarget("demo")\n    set_kind("binary")\n    add_files("src/*.cpp")\n    add_packages("${name}")`
-        : `add_requires("${name}")\n\ntarget("demo")\n    set_kind("binary")\n    add_files("src/*.cpp")\n    add_packages("${name}")`,
+      id: 'xmake',
+      title: 'Integrate in an xmake project',
+      description:
+        'Add the package as a project requirement in xmake.lua, then attach it to your target.',
+      snippets: [{ label: 'xmake.lua', language: 'lua', code: xmakeProject }],
     },
     {
-      label: 'xrepo env shell',
-      language: 'bash',
-      code: `xrepo env -b "${withVer}" shell`,
+      id: 'env',
+      title: 'Use in a virtual environment',
+      description:
+        'Drop into a shell with this package (and its dependencies) wired up on PATH.',
+      snippets: [
+        { label: 'enter shell', language: 'bash', code: `xrepo env -b "${withVer}" shell` },
+      ],
     },
   ]
 }

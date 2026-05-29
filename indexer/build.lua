@@ -77,7 +77,12 @@ function main(...)
                 local inst = _load_package(packagename, packagedir, packagefile)
                 if not inst or inst:is_template() then return end
                 local times = git_history.times_for(history, disk_letter, packagename)
-                local d = package_info.detail(inst, times)
+                local opts = {
+                    added_at       = times.added_at,
+                    updated_at     = times.updated_at,
+                    package_source = io.readfile(packagefile),
+                }
+                local d = package_info.detail(inst, opts)
                 _save_json(path.join(packages_dir, packagename .. ".json"), d)
                 table.insert(summaries, package_info.summary(d))
             end,

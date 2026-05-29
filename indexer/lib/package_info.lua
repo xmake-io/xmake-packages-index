@@ -251,6 +251,10 @@ function detail(instance, opts)
         letter         = letter(instance),
         added_at       = opts.added_at,
         updated_at     = opts.updated_at,
+        -- Verbatim recipe source. Embedding it here means the detail page can
+        -- render the "what this package actually does" view without a second
+        -- network round-trip per package.
+        package_source = opts.package_source,
     }
 end
 

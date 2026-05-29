@@ -1,0 +1,92 @@
+/* Syntax-highlight theme tuned to the site's CSS tokens so it follows light
+ * and dark theme switches without loading separate stylesheets. Colors picked
+ * to read well against --c-code-bg in both modes; the dark overrides at the
+ * bottom adjust the few tokens that need more lift on a dark surface. */
+
+.hljs {
+  color: var(--c-code-text);
+  background: transparent;
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: #8e98a4;
+  font-style: italic;
+}
+
+.hljs-keyword,
+.hljs-built_in,
+.hljs-selector-tag,
+.hljs-meta,
+.hljs-type {
+  color: #d73a49;
+  font-weight: 600;
+}
+
+.hljs-string,
+.hljs-attr,
+.hljs-template-variable,
+.hljs-template-tag,
+.hljs-symbol,
+.hljs-bullet {
+  color: #032f62;
+}
+
+.hljs-number,
+.hljs-literal {
+  color: #005cc5;
+}
+
+.hljs-title,
+.hljs-section,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-function .hljs-title {
+  color: #6f42c1;
+}
+
+.hljs-variable,
+.hljs-params,
+.hljs-attribute {
+  color: #e36209;
+}
+
+.hljs-deletion { color: #b31d28; }
+.hljs-addition { color: #22863a; }
+
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: 700; }
+
+html.dark .hljs-comment,
+html.dark .hljs-quote { color: #8b96a3; }
+
+html.dark .hljs-keyword,
+html.dark .hljs-built_in,
+html.dark .hljs-selector-tag,
+html.dark .hljs-meta,
+html.dark .hljs-type { color: #ff7b72; }
+
+html.dark .hljs-string,
+html.dark .hljs-attr,
+html.dark .hljs-template-variable,
+html.dark .hljs-template-tag,
+html.dark .hljs-symbol,
+html.dark .hljs-bullet { color: #a5d6ff; }
+
+html.dark .hljs-number,
+html.dark .hljs-literal { color: #79c0ff; }
+
+html.dark .hljs-title,
+html.dark .hljs-section,
+html.dark .hljs-name,
+html.dark .hljs-selector-id,
+html.dark .hljs-selector-class,
+html.dark .hljs-function .hljs-title { color: #d2a8ff; }
+
+html.dark .hljs-variable,
+html.dark .hljs-params,
+html.dark .hljs-attribute { color: #ffa657; }
+
+html.dark .hljs-deletion { color: #ffa198; }
+html.dark .hljs-addition { color: #7ee787; }

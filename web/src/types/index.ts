@@ -40,6 +40,7 @@ export interface PackageDetail {
   letter: string
   added_at?: string
   updated_at?: string
+  package_source?: string
 }
 
 export interface IndexFile {

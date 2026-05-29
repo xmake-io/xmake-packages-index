@@ -7,7 +7,7 @@
     "lang": "en-US",
     "github": "https://github.com/xmake-io/xmake-repo",
     "indexRepo": "https://github.com/xmake-io/xmake-packages-index",
-    "docs": "https://xmake.io"
+    "docs": "https://xmake.io/guide/package-management/using-official-packages.html"
   },
   "build": {
     "repoUrl": "https://github.com/xmake-io/xmake-repo.git",

@@ -1,7 +1,14 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import CopyButton from './CopyButton.vue'
+import { highlight } from '@/lib/highlight'
 
-defineProps<{ code: string; language?: string; title?: string }>()
+const props = defineProps<{ code: string; language?: string; title?: string }>()
+
+// v-html is safe here: the highlighter pre-escapes any unrecognized language
+// path, and `code` itself is generated from package metadata at build time
+// (no user-controlled content).
+const highlighted = computed(() => highlight(props.code, props.language))
 </script>
 
 <template>
@@ -10,7 +17,7 @@ defineProps<{ code: string; language?: string; title?: string }>()
       <span class="code-block__lang">{{ title ?? language ?? '' }}</span>
       <CopyButton :text="code" />
     </div>
-    <pre><code>{{ code }}</code></pre>
+    <pre><code class="hljs" v-html="highlighted" /></pre>
   </div>
 </template>
 

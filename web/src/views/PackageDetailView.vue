@@ -7,7 +7,9 @@ import PackageConfigs from '@/components/package/PackageConfigs.vue'
 import PackageVersions from '@/components/package/PackageVersions.vue'
 import PackageUsage from '@/components/package/PackageUsage.vue'
 import PackageDeps from '@/components/package/PackageDeps.vue'
+import CodeBlock from '@/components/ui/CodeBlock.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
+import { config } from '@/config'
 
 const props = defineProps<{ name: string }>()
 const { pkg, loading, error } = usePackage(() => props.name)
@@ -16,6 +18,25 @@ const aliasText = computed(() => {
   const a = pkg.value?.alias
   if (!a) return ''
   return Array.isArray(a) ? a.join(', ') : a
+})
+
+// Deep-link to the package's xmake.lua in the xmake-repo source tree so users
+// can review history, raise issues, or send PRs without leaving the page.
+const recipeUrl = computed(() => {
+  const p = pkg.value
+  if (!p) return ''
+  return `${config.site.github}/blob/master/packages/${p.letter}/${p.name}/xmake.lua`
+})
+
+// The one-line "give me the import" snippet shown above the fold. We pin the
+// version when available so the copied line is reproducible; otherwise we
+// fall back to the bare name so old packages without versions still work.
+const quickRequire = computed(() => {
+  const p = pkg.value
+  if (!p) return ''
+  return p.latest_version
+    ? `add_requires("${p.name} ${p.latest_version}")`
+    : `add_requires("${p.name}")`
 })
 </script>
 
@@ -36,9 +57,10 @@ const aliasText = computed(() => {
         </div>
       </header>
 
-      <section class="detail__section">
-        <h2>Install &amp; integrate</h2>
-        <PackageUsage :pkg="pkg" />
+      <!-- Hero copy-the-import line. Most visitors land here knowing exactly
+           what they want: the single add_requires call for their xmake.lua. -->
+      <section class="quick">
+        <CodeBlock :code="quickRequire" language="lua" title="Add to xmake.lua" />
       </section>
 
       <div class="detail__grid">
@@ -67,6 +89,23 @@ const aliasText = computed(() => {
           <PackageDeps :deps="pkg.deps" />
         </section>
       </div>
+
+      <section v-if="pkg.package_source" class="detail__section">
+        <h2>Package recipe <span class="muted">xmake.lua</span></h2>
+        <p class="muted detail__hint">
+          Verbatim source from xmake-repo.
+          <a v-if="recipeUrl" :href="recipeUrl" target="_blank" rel="noopener">
+            View on GitHub →
+          </a>
+        </p>
+        <CodeBlock :code="pkg.package_source" language="lua" title="xmake.lua" />
+      </section>
+
+      <section class="detail__section">
+        <h2>Install &amp; integrate</h2>
+        <p class="muted detail__hint">Walkthroughs for the three common workflows.</p>
+        <PackageUsage :pkg="pkg" />
+      </section>
     </template>
   </div>
 </template>
@@ -100,6 +139,17 @@ const aliasText = computed(() => {
   font-weight: 400;
   margin-left: 6px;
 }
+.detail__hint {
+  color: var(--c-text-3);
+  font-size: 13px;
+  margin: 0 0 var(--space-3);
+}
+.detail__hint a { color: var(--c-brand-3); margin-left: 4px; }
+
+/* The quick-import snippet sits between the page head and the rest of the
+   detail body. Pad it lightly so it feels distinct without competing with
+   the more substantial sections that follow. */
+.quick { margin: 0 0 var(--space-8); }
 
 .detail__grid {
   display: grid;
