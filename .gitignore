@@ -1,5 +1,9 @@
 # dependencies
+node_modules/
 web/node_modules/
+# Stub root package.json has no real deps; ignore its lockfile so it doesn't
+# get committed accidentally. (web/package-lock.json is intentionally tracked.)
+/package-lock.json
 
 # build outputs
 web/dist/

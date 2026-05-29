@@ -1,0 +1,12 @@
+{
+  "_comment": "Stub package.json at the repo root so Azure SWA's Oryx builder detects this as a Node project and honors app_build_command. The actual app lives in web/ with its own package.json; this file intentionally has no dependencies so Oryx's implicit `npm install` is a no-op.",
+  "name": "xmake-packages-index",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "./build.sh"
+  }
+}
