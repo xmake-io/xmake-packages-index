@@ -10,10 +10,10 @@ const route = useRoute()
 <template>
   <AppHeader />
   <main class="app-main">
-    <!-- Plain RouterView: wrapping lazy components in <Transition> caused
-         blank renders when the async chunk hadn't resolved yet. Using
-         :key forces a clean remount on every route change. -->
-    <RouterView :key="route.fullPath" />
+    <!-- :key uses `route.path` (not `fullPath`) so navigating between routes
+         remounts the view but typing into a filter input — which only
+         updates the query string — keeps the input focused. -->
+    <RouterView :key="route.path" />
   </main>
   <AdBar slot-name="footer" />
   <AppFooter />

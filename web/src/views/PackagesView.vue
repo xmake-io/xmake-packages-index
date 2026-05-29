@@ -25,18 +25,25 @@ if (initialSort === 'updated' || initialSort === 'added' || initialSort === 'nam
 }
 
 // Keep the URL in sync so users can share/bookmark filtered views.
+// Debounced because users type into `query` one keystroke at a time — pushing
+// to history on every character is wasteful and (combined with any RouterView
+// :key="fullPath") would steal focus from the input.
+let syncTimer: ReturnType<typeof setTimeout> | null = null
 watch([query, page, letter, platform, license, sort], () => {
-  router.replace({
-    name: 'packages',
-    query: {
-      ...(query.value ? { q: query.value } : {}),
-      ...(letter.value ? { letter: letter.value } : {}),
-      ...(platform.value ? { platform: platform.value } : {}),
-      ...(license.value ? { license: license.value } : {}),
-      ...(sort.value !== 'name' ? { sort: sort.value } : {}),
-      ...(page.value > 1 ? { page: page.value } : {}),
-    },
-  })
+  if (syncTimer) clearTimeout(syncTimer)
+  syncTimer = setTimeout(() => {
+    router.replace({
+      name: 'packages',
+      query: {
+        ...(query.value ? { q: query.value } : {}),
+        ...(letter.value ? { letter: letter.value } : {}),
+        ...(platform.value ? { platform: platform.value } : {}),
+        ...(license.value ? { license: license.value } : {}),
+        ...(sort.value !== 'name' ? { sort: sort.value } : {}),
+        ...(page.value > 1 ? { page: page.value } : {}),
+      },
+    })
+  }, 250)
 })
 
 // Any filter change resets to page 1; preserve scroll only on explicit page navigation.
