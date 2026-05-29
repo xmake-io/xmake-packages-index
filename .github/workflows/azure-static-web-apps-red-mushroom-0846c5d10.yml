@@ -27,30 +27,9 @@ jobs:
           submodules: false
           lfs: false
 
-      # The build depends on xmake (for the lua indexer); Azure's built-in
-      # Oryx builder doesn't know about xmake, so we run the whole build on
-      # the GitHub runner and ship the finished artifact to SWA with
-      # skip_app_build: true.
-      - uses: xmake-io/github-action-setup-xmake@v1
-        with:
-          xmake-version: latest
-
-      - name: Cache npm + xmake-repo checkout
-        uses: actions/cache@v4
-        with:
-          path: |
-            web/node_modules
-            .cache/xmake-repo
-          key: ${{ runner.os }}-pkgs-index-${{ hashFiles('web/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-pkgs-index-
-
-      - name: Build dataset + static site
-        env:
-          # SWA serves from the root of the resource hostname; "/" is correct.
-          VITE_BASE: ${{ vars.VITE_BASE || '/' }}
-        run: ./build.sh
-
+      # Same pattern as xmake-docs: let Azure's Oryx container build the site
+      # by pointing app_build_command at our local script. The script itself
+      # bootstraps xmake on first run, since Oryx doesn't have it preinstalled.
       - name: Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
@@ -59,11 +38,10 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           ###### Repository/Build Configurations ######
-          app_location: "web/dist"   # already-built static artifact
+          app_location: "/"                       # source root
           api_location: ""
-          output_location: ""
-          skip_app_build: true
-          skip_api_build: true
+          app_build_command: "./build.sh"         # Oryx runs this
+          output_location: "web/dist"             # relative to app_location
           ###### End of Repository/Build Configurations ######
 
   close_pull_request_job:

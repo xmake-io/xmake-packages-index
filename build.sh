@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Full local build: refresh xmake-repo checkout, regenerate the JSON dataset,
-# then produce a static site under web/dist/. The same flow runs in CI.
+# Full build: refresh xmake-repo checkout, regenerate the JSON dataset,
+# then produce a static site under web/dist/. The same script runs locally
+# and inside Azure Static Web Apps' Oryx build container in CI.
 #
-# In CI the xmake-io/github-action-setup-xmake action provisions xmake before
-# this script runs; for local development install xmake yourself once
-# (https://xmake.io). This script never installs tools — it just checks they
-# are on PATH and fails with an actionable message otherwise.
+# Oryx provides node + python3 + git + curl but not xmake; this script
+# bootstraps xmake when missing, so the workflow can use the standard
+# Azure SWA `app_build_command` pattern (matching xmake-docs).
 #
 # Usage:
 #   ./build.sh                # full build (fetch repo, build data + site)
@@ -15,6 +15,8 @@
 #
 # Env knobs:
 #   VITE_BASE        — passed through to Vite; defaults to "/"
+#   XMAKE_VERSION    — pin a specific xmake tag when bootstrapping (default: latest)
+#   NO_INSTALL=1     — refuse to bootstrap xmake; fail if missing
 #   FULL_HISTORY=1   — clone xmake-repo with full blobs (default: blob-filtered)
 
 set -euo pipefail
@@ -57,6 +59,33 @@ ensure_node() {
   fi
 }
 
+# Make sure ~/.local/bin (where the xmake installer drops the binary) is on
+# PATH whether we install in this session or carried it over from a previous
+# step. Done once up-front so later `command -v xmake` checks see it.
+export PATH="$HOME/.local/bin:$PATH"
+
+ensure_xmake() {
+  if command -v xmake >/dev/null 2>&1; then return; fi
+
+  [[ "${NO_INSTALL:-0}" == "1" ]] && fail "xmake missing and NO_INSTALL=1"
+
+  local ver="${XMAKE_VERSION:-latest}"
+  case "$(uname -s)" in
+    Linux|Darwin)
+      log "installing xmake ($ver) via xmake.io/shget.text"
+      # Official one-liner — writes to ~/.local/bin without sudo.
+      curl -fsSL https://xmake.io/shget.text | bash -s "$ver"
+      ;;
+    *)
+      fail "auto-install of xmake on $(uname -s) is not supported — install manually from https://xmake.io"
+      ;;
+  esac
+
+  export PATH="$HOME/.local/bin:$PATH"
+  command -v xmake >/dev/null 2>&1 || fail "xmake still missing after install (looked in \$HOME/.local/bin)"
+  xmake --version | head -n 1
+}
+
 # -----------------------------------------------------------------------------
 # Argument parsing
 # -----------------------------------------------------------------------------
@@ -93,7 +122,7 @@ LATEST_DAYS=$(read_config build.latestWindowDays)
 # -----------------------------------------------------------------------------
 
 if [[ "$DO_DATA" == 1 ]]; then
-  ensure_command xmake xmake 'install via https://xmake.io (or use xmake-io/github-action-setup-xmake in CI)'
+  ensure_xmake
 
   if [[ ! -d "$REPO_DIR/.git" ]]; then
     log "cloning $REPO_URL into $REPO_DIR"
