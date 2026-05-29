@@ -1,96 +1,78 @@
 <script setup lang="ts">
-// Slot-based ad bar. We mount both WWAds (CN) and CarbonAds (intl); each
-// provider hides itself if it has no campaign to serve, so visitors see at
-// most one ad even though we wire up both. Same providers as xmake-docs so
-// when this site and xmake-docs share a domain, accounting stays unified.
-//
-// `slot-name` is forwarded into the WWAds element so multiple instances on a
-// page (e.g. detail-page sidebar + global footer) don't collide.
+// Carbon Ads slot — same code/placement as xmake-docs so accounting stays
+// unified when this site and xmake-docs share a domain. Carbon's snippet
+// renders inside whichever container its <script> tag is appended to, and
+// hides itself entirely when no campaign is available.
 
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { config } from '@/config'
 
-defineProps<{ slotName?: string; layout?: 'horizontal' | 'vertical' }>()
+defineProps<{ slotName?: string }>()
 
 const container = ref<HTMLElement | null>(null)
-let scriptEl: HTMLScriptElement | null = null
 
 onMounted(() => {
-  // WWAds expects `wwads-cn` elements to be present before the script scans the DOM.
-  // We append the script after our element is mounted to guarantee detection.
-  const existing = document.getElementById('wwads-script')
-  if (existing) existing.remove()
-
-  scriptEl = document.createElement('script')
-  scriptEl.id = 'wwads-script'
-  scriptEl.src = 'https://cdn.wwads.cn/js/makemoney.js'
-  scriptEl.async = true
-  scriptEl.charset = 'UTF-8'
-  document.body.appendChild(scriptEl)
-
-  // Carbon Ads: inject one script tag inside our placeholder. Carbon dedupes
-  // by container, so we guard with isInitialized.
-  const carbon = container.value?.querySelector('.carbon-slot')
-  if (carbon && !carbon.hasChildNodes()) {
-    const s = document.createElement('script')
-    s.async = true
-    s.src = `//cdn.carbonads.com/carbon.js?serve=${config.ads.carbon.code}&placement=${config.ads.carbon.placement}`
-    s.id = '_carbonads_js'
-    carbon.appendChild(s)
-  }
-})
-
-onUnmounted(() => {
-  if (scriptEl && scriptEl.parentNode) {
-    scriptEl.parentNode.removeChild(scriptEl)
-  }
+  if (!container.value || container.value.hasChildNodes()) return
+  const s = document.createElement('script')
+  s.async = true
+  s.id = '_carbonads_js'
+  s.src = `//cdn.carbonads.com/carbon.js?serve=${config.ads.carbon.code}&placement=${config.ads.carbon.placement}`
+  container.value.appendChild(s)
 })
 </script>
 
 <template>
-  <aside class="ad-bar" :class="`ad-bar--${layout ?? 'horizontal'}`" ref="container">
-    <div
-      class="wwads-cn"
-      :class="layout === 'vertical' ? 'wwads-vertical' : 'wwads-horizontal'"
-      :data-id="config.ads.wwadsId"
-      :data-slot="slotName"
-    ></div>
-    <div class="carbon-slot"></div>
+  <aside class="ad-bar">
+    <div class="ad-bar__slot" ref="container" :data-slot="slotName"></div>
   </aside>
 </template>
 
 <style scoped>
 .ad-bar {
-  margin: var(--space-6) auto;
-  padding: 0 var(--space-6);
-  max-width: var(--container-max);
   display: flex;
   justify-content: center;
-  gap: var(--space-4);
-  flex-wrap: wrap;
+  padding: var(--space-6) var(--space-4);
 }
 
-.ad-bar--vertical {
-  flex-direction: column;
-  align-items: stretch;
-}
-
-.wwads-cn {
-  min-height: 90px;
+/* Carbon injects #carbonads inside our slot div. Style its DOM via :deep so
+   the ad surface matches the rest of the site (dark mode friendly). */
+.ad-bar__slot {
   width: 100%;
+  max-width: 330px;
 }
 
-/* Provider-injected anchors should never break our layout grid */
 .ad-bar :deep(#carbonads) {
-  max-width: 330px;
   width: 100%;
   background: var(--c-bg-soft);
   border: 1px solid var(--c-border);
   border-radius: var(--radius-md);
   font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  overflow: hidden;
 }
-
-@media (max-width: 640px) {
-  .ad-bar { padding: 0 var(--space-4); }
+.ad-bar :deep(#carbonads a) { color: var(--c-text-1); text-decoration: none; }
+.ad-bar :deep(#carbonads a:hover) { color: var(--c-brand-3); }
+.ad-bar :deep(#carbonads .carbon-wrap) { display: flex; }
+.ad-bar :deep(#carbonads .carbon-img) { display: block; margin: 0; flex-shrink: 0; }
+.ad-bar :deep(#carbonads .carbon-img img) { display: block; }
+.ad-bar :deep(#carbonads .carbon-text) {
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--c-text-2);
+}
+.ad-bar :deep(#carbonads .carbon-poweredby) {
+  display: block;
+  padding: 6px 8px;
+  background: var(--c-bg);
+  color: var(--c-text-mute);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  text-align: center;
+  border-top: 1px solid var(--c-border);
 }
 </style>

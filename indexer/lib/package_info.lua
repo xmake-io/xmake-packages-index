@@ -215,13 +215,14 @@ function supported_platforms(instance)
     return out
 end
 
--- The first letter of the package name (xmake-repo's on-disk grouping). Useful
--- as a coarse category facet in the UI; not a semantic category.
+-- The first character of the package name, lowercased — mirrors xmake-repo's
+-- on-disk grouping (`packages/<letter>/<name>/`). For names starting with a
+-- digit (11zip, 7z) the letter is the digit itself, which matches both the
+-- on-disk directory and what users expect to type into a filter.
 function letter(instance)
     local n = instance:name() or ""
     local c = n:sub(1, 1):lower()
-    if c:match("[a-z]") then return c end
-    return "#"
+    return c ~= "" and c or "_"
 end
 
 -- Compose every reportable field for one package into a single table. The web

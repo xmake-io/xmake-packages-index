@@ -8,7 +8,6 @@ import PackageVersions from '@/components/package/PackageVersions.vue'
 import PackageUsage from '@/components/package/PackageUsage.vue'
 import PackageDeps from '@/components/package/PackageDeps.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
-import AdBar from '@/components/layout/AdBar.vue'
 
 const props = defineProps<{ name: string }>()
 const { pkg, loading, error } = usePackage(() => props.name)
@@ -68,8 +67,6 @@ const aliasText = computed(() => {
           <PackageDeps :deps="pkg.deps" />
         </section>
       </div>
-
-      <AdBar slot-name="package-detail" />
     </template>
   </div>
 </template>

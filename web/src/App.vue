@@ -22,8 +22,6 @@ const route = useRoute()
 <style>
 .app-main {
   flex: 1;
-  /* Hero pages provide their own top padding; views without a hero get
-     a smaller default so they don't feel floated. */
-  padding: var(--space-3) 0 var(--space-10);
+  padding: var(--space-8) 0 var(--space-12);
 }
 </style>

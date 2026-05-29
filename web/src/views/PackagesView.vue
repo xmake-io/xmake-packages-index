@@ -103,7 +103,18 @@ const paged = computed(() => {
   return filtered.value.slice(start, start + perPage)
 })
 
-const letters = '#abcdefghijklmnopqrstuvwxyz0123456789'.split('')
+// Derive the letter strip from real data instead of hard-coding a–z + #.
+// Hard-coded buttons left dead entries (no packages start with `q`-only,
+// say) and the catch-all `#` was confusing — users couldn't tell whether
+// it meant digits, symbols, or "no letter". Sorting puts digits first
+// (their codepoints come before lowercase letters) which matches the
+// on-disk packages/<letter>/ ordering.
+const letters = computed(() => {
+  if (!index.value) return []
+  const seen = new Set<string>()
+  for (const p of index.value.packages) if (p.letter) seen.add(p.letter)
+  return [...seen].sort()
+})
 
 function resetFilters() {
   query.value = ''

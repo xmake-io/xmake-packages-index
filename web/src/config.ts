@@ -15,7 +15,6 @@ export interface SiteConfig {
     docs: string
   }
   ads: {
-    wwadsId: string
     carbon: { code: string; placement: string }
   }
   ui: {
