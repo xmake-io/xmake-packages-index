@@ -1,0 +1,37 @@
+{
+  "$comment": "Azure Static Web Apps routing config. Vite copies this verbatim into dist/ at build time. We prerender a real HTML file per route (dist/packages/<name>/index.html, etc.), so the fallback is only there for stale share-URLs and SPA-style query-only navigations that don't map to a built file.",
+
+  "navigationFallback": {
+    "rewrite": "/404.html",
+    "exclude": [
+      "/data/*",
+      "/assets/*",
+      "/favicon.svg",
+      "/staticwebapp.config.json",
+      "/*.{js,css,svg,png,jpg,jpeg,webp,ico,woff,woff2,json,map,txt}"
+    ]
+  },
+
+  "mimeTypes": {
+    ".json": "application/json"
+  },
+
+  "globalHeaders": {
+    "Cache-Control": "public, max-age=300, must-revalidate"
+  },
+
+  "routes": [
+    {
+      "route": "/data/*",
+      "headers": {
+        "Cache-Control": "public, max-age=300, must-revalidate"
+      }
+    },
+    {
+      "route": "/assets/*",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      }
+    }
+  ]
+}
