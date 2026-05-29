@@ -27,6 +27,19 @@ jobs:
           submodules: false
           lfs: false
 
+      # Sanity check the deployment token *before* invoking the deploy action,
+      # so a missing/typo'd secret produces a clear error instead of the
+      # generic "No matching Static Web App was found" from Azure.
+      - name: Check SWA token presence
+        env:
+          TOKEN: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_RED_MUSHROOM_0846C5D10 }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::error::secret AZURE_STATIC_WEB_APPS_API_TOKEN_RED_MUSHROOM_0846C5D10 is empty or undefined"
+            exit 1
+          fi
+          echo "token length: ${#TOKEN}"
+
       # Same pattern as xmake-docs: let Azure's Oryx container build the site
       # by pointing app_build_command at our local script. The script itself
       # bootstraps xmake on first run, since Oryx doesn't have it preinstalled.
