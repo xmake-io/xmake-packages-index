@@ -15,7 +15,8 @@
 #
 # Env knobs:
 #   VITE_BASE        — passed through to Vite; defaults to "/"
-#   XMAKE_VERSION    — pin a specific xmake tag when bootstrapping (default: latest)
+#   XMAKE_VERSION    — pin a specific xmake git ref (tag like v2.9.9, or branch
+#                      like branch@dev). Empty = default stable release.
 #   NO_INSTALL=1     — refuse to bootstrap xmake; fail if missing
 #   FULL_HISTORY=1   — clone xmake-repo with full blobs (default: blob-filtered)
 
@@ -69,17 +70,23 @@ ensure_xmake() {
 
   [[ "${NO_INSTALL:-0}" == "1" ]] && fail "xmake missing and NO_INSTALL=1"
 
-  local ver="${XMAKE_VERSION:-latest}"
   case "$(uname -s)" in
-    Linux|Darwin)
-      log "installing xmake ($ver) via xmake.io/shget.text"
-      # Official one-liner — writes to ~/.local/bin without sudo.
-      curl -fsSL https://xmake.io/shget.text | bash -s "$ver"
-      ;;
-    *)
-      fail "auto-install of xmake on $(uname -s) is not supported — install manually from https://xmake.io"
-      ;;
+    Linux|Darwin) ;;
+    *) fail "auto-install of xmake on $(uname -s) is not supported — install manually from https://xmake.io" ;;
   esac
+
+  # XMAKE_VERSION is passed verbatim to shget.text. The installer treats its
+  # positional arg as a git ref (tag/branch), NOT a semver alias — "latest"
+  # is *not* a branch and would fail. Leave it empty to pull the default
+  # stable release; set XMAKE_VERSION=v2.9.9 (or branch@dev) to pin.
+  local ver="${XMAKE_VERSION:-}"
+  if [[ -n "$ver" ]]; then
+    log "installing xmake ($ver) via xmake.io/shget.text"
+    curl -fsSL https://xmake.io/shget.text | bash -s "$ver"
+  else
+    log "installing xmake (default stable) via xmake.io/shget.text"
+    curl -fsSL https://xmake.io/shget.text | bash
+  fi
 
   export PATH="$HOME/.local/bin:$PATH"
   command -v xmake >/dev/null 2>&1 || fail "xmake still missing after install (looked in \$HOME/.local/bin)"
