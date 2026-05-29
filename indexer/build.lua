@@ -68,11 +68,15 @@ function main(...)
     for _, packagedir in ipairs(os.dirs(path.join("packages", "*", "*"))) do
         local packagename = path.filename(packagedir)
         local packagefile = path.join(packagedir, "xmake.lua")
+        -- The on-disk letter is what `git log` saw; package_info.letter() returns
+        -- the *display* letter (digits collapse to "#"), which doesn't round-trip
+        -- back into the git-history index. Always key off the directory name.
+        local disk_letter = path.filename(path.directory(packagedir))
         try {
             function ()
                 local inst = _load_package(packagename, packagedir, packagefile)
                 if not inst or inst:is_template() then return end
-                local times = git_history.times_for(history, package_info.letter(inst), packagename)
+                local times = git_history.times_for(history, disk_letter, packagename)
                 local d = package_info.detail(inst, times)
                 _save_json(path.join(packages_dir, packagename .. ".json"), d)
                 table.insert(summaries, package_info.summary(d))

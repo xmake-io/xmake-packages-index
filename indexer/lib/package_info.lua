@@ -3,9 +3,17 @@
 -- All public functions take a loaded `instance` and return plain Lua tables
 -- that JSON-serialize cleanly. No I/O here — git/file lookups live elsewhere.
 
+import("core.base.json")
 import("core.base.semver")
 import("core.platform.platform")
 import("private.core.base.select_script")
+
+-- Tag a Lua table so xmake's JSON encoder emits `[]` rather than `{}` when it
+-- happens to be empty. Without this, the JS side trips on `for...of` over an
+-- object — JS arrays and objects look identical in JSON when both are empty.
+local function _array(t)
+    return json.mark_as_array(t or {})
+end
 
 -- Platforms we report in supported_plats, in display order.
 local PLATS = {"windows", "linux", "macosx", "iphoneos", "android", "mingw", "msys", "bsd", "wasm", "cross", "harmony"}
@@ -28,9 +36,15 @@ end
 
 local function _urls_list(instance)
     local urls = instance:get("urls")
-    if not urls then return {} end
-    if type(urls) == "string" then return {urls} end
-    return urls
+    if not urls then return _array({}) end
+    -- Never mutate xmake's internal data — copy before tagging as JSON array.
+    local out = {}
+    if type(urls) == "string" then
+        table.insert(out, urls)
+    else
+        for _, u in ipairs(urls) do table.insert(out, u) end
+    end
+    return _array(out)
 end
 
 local function _normalize_repo_url(url)
@@ -110,7 +124,7 @@ end
 -- "latest <- N previous" trivially.
 function versions_list(instance)
     local versions = instance:get("versions")
-    if not versions or type(versions) ~= "table" then return {} end
+    if not versions or type(versions) ~= "table" then return _array({}) end
     local seen, list = {}, {}
     for v, _ in pairs(versions) do
         local key = tostring(v)
@@ -127,7 +141,7 @@ function versions_list(instance)
         end
         return a < b
     end)
-    return list
+    return _array(list)
 end
 
 -- Strip a leading "v" tag prefix on user-facing latest version (v1.3.1 -> 1.3.1).
@@ -158,7 +172,7 @@ function configs_table(instance)
         })
     end
     table.sort(out, function(a, b) return tostring(a.name) < tostring(b.name) end)
-    return out
+    return _array(out)
 end
 
 function deps_list(instance)
@@ -167,7 +181,7 @@ function deps_list(instance)
     local out = {}
     for _, d in ipairs(deps) do table.insert(out, tostring(d)) end
     table.sort(out)
-    return out
+    return _array(out)
 end
 
 function extsources_list(instance)
@@ -176,7 +190,7 @@ function extsources_list(instance)
     local out = {}
     for _, e in ipairs(ext) do table.insert(out, tostring(e)) end
     table.sort(out)
-    return out
+    return _array(out)
 end
 
 -- Returns a map { [plat] = {arch, arch, ...} } of platforms+archs the package
@@ -195,7 +209,7 @@ function supported_platforms(instance)
             end
         end
         if #supported > 0 then
-            out[plat] = supported
+            out[plat] = _array(supported)
         end
     end
     return out
@@ -251,7 +265,7 @@ function summary(d)
         license        = d.license,
         latest_version = d.latest_version,
         letter         = d.letter,
-        platforms      = plats,
+        platforms      = _array(plats),
         added_at       = d.added_at,
         updated_at     = d.updated_at,
     }

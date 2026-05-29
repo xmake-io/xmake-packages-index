@@ -55,13 +55,14 @@ const recentUpdated = computed(() => latest.value?.updated?.slice(0, 12) ?? [])
 
 <style scoped>
 .hero {
-  padding: var(--space-16) 0 var(--space-12);
+  /* Tighter top/bottom so the recent-added cards sit closer to the hero. */
+  padding: var(--space-10) 0 var(--space-6);
   text-align: center;
   background:
     radial-gradient(circle at 50% 0%, var(--c-brand-soft), transparent 60%);
 }
 .hero__title {
-  font-size: clamp(28px, 4vw, 44px);
+  font-size: clamp(26px, 3.4vw, 40px);
   font-weight: 800;
   letter-spacing: -0.02em;
 }
@@ -72,22 +73,22 @@ const recentUpdated = computed(() => latest.value?.updated?.slice(0, 12) ?? [])
   color: transparent;
 }
 .hero__desc {
-  margin: var(--space-4) auto 0;
+  margin: var(--space-3) auto 0;
   max-width: 640px;
   color: var(--c-text-2);
-  font-size: 17px;
+  font-size: 16px;
 }
 .hero__actions {
   display: flex;
   gap: var(--space-3);
   justify-content: center;
-  margin-top: var(--space-6);
+  margin-top: var(--space-5);
   flex-wrap: wrap;
 }
 .hero__stats {
-  margin-top: var(--space-6);
+  margin-top: var(--space-4);
   color: var(--c-text-3);
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .btn {
@@ -110,15 +111,17 @@ const recentUpdated = computed(() => latest.value?.updated?.slice(0, 12) ?? [])
 }
 .btn--primary:hover { background: var(--c-brand-2); color: #fff; }
 
-.feed { margin-top: var(--space-10); }
+/* Snug against the hero — the radial gradient already provides separation. */
+.feed { margin-top: var(--space-5); }
 .feed__header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-3);
-  margin: var(--space-8) 0 var(--space-4);
+  margin: var(--space-6) 0 var(--space-3);
 }
-.feed__header h2 { font-size: 22px; }
+.feed__header:first-child { margin-top: 0; }
+.feed__header h2 { font-size: 20px; }
 .muted { color: var(--c-text-3); font-size: 13px; }
 .empty { padding: var(--space-6) 0; }
 </style>

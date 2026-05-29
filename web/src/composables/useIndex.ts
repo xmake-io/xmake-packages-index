@@ -1,5 +1,6 @@
-// Lazy singleton load of index.json — every component that wants the full
-// package list calls useIndex() and shares the same promise.
+// Lazy singleton loads of the JSON dataset. Each composable maintains its own
+// error ref so a failed index.json doesn't suppress a working latest.json (the
+// home page loads both; we don't want one taking down the other).
 
 import { ref } from 'vue'
 import { loadIndex, loadLatest, loadStats } from '@/lib/data'
@@ -8,42 +9,53 @@ import type { IndexFile, LatestFile, StatsFile } from '@/types'
 const index = ref<IndexFile | null>(null)
 const latest = ref<LatestFile | null>(null)
 const stats = ref<StatsFile | null>(null)
-const error = ref<string | null>(null)
+
+const indexError = ref<string | null>(null)
+const latestError = ref<string | null>(null)
+const statsError = ref<string | null>(null)
 
 let indexPromise: Promise<void> | null = null
 let latestPromise: Promise<void> | null = null
 let statsPromise: Promise<void> | null = null
 
-function track<T>(p: Promise<T>): Promise<T> {
-  return p.catch((e) => {
-    error.value = String(e)
-    throw e
-  })
-}
-
 export function useIndex() {
   if (!indexPromise) {
-    indexPromise = track(loadIndex()).then((d) => {
-      index.value = d
-    })
+    indexPromise = loadIndex()
+      .then((d) => {
+        index.value = d
+      })
+      .catch((e) => {
+        indexError.value = String(e)
+        // Surface to the dev console too — easier to spot a 404 on data/index.json.
+        console.error('[useIndex] failed to load index.json', e)
+      })
   }
-  return { index, error, ready: indexPromise }
+  return { index, error: indexError, ready: indexPromise }
 }
 
 export function useLatest() {
   if (!latestPromise) {
-    latestPromise = track(loadLatest()).then((d) => {
-      latest.value = d
-    })
+    latestPromise = loadLatest()
+      .then((d) => {
+        latest.value = d
+      })
+      .catch((e) => {
+        latestError.value = String(e)
+        console.error('[useLatest] failed to load latest.json', e)
+      })
   }
-  return { latest, error, ready: latestPromise }
+  return { latest, error: latestError, ready: latestPromise }
 }
 
 export function useStats() {
   if (!statsPromise) {
-    statsPromise = track(loadStats()).then((d) => {
-      stats.value = d
-    })
+    statsPromise = loadStats()
+      .then((d) => {
+        stats.value = d
+      })
+      .catch((e) => {
+        statsError.value = String(e)
+      })
   }
-  return { stats, error, ready: statsPromise }
+  return { stats, error: statsError, ready: statsPromise }
 }

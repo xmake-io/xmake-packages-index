@@ -1,8 +1,15 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { PackageSummary } from '@/types'
 import { licenseText, platformLabel, relativeTime } from '@/lib/format'
 
-defineProps<{ pkg: PackageSummary }>()
+const props = defineProps<{ pkg: PackageSummary }>()
+
+// Defensive: a few packages historically serialized empty platform lists as
+// {} (object) instead of [] (array); the listing must never crash on those.
+const platforms = computed(() =>
+  Array.isArray(props.pkg.platforms) ? props.pkg.platforms : [],
+)
 </script>
 
 <template>
@@ -14,7 +21,7 @@ defineProps<{ pkg: PackageSummary }>()
     <p v-if="pkg.description" class="pkg-card__desc">{{ pkg.description }}</p>
     <footer class="pkg-card__meta">
       <span v-if="pkg.license" class="chip">{{ licenseText(pkg.license) }}</span>
-      <span v-for="p in pkg.platforms" :key="p" class="chip">{{ platformLabel(p) }}</span>
+      <span v-for="p in platforms" :key="p" class="chip">{{ platformLabel(p) }}</span>
       <span class="pkg-card__time" v-if="pkg.updated_at">{{ relativeTime(pkg.updated_at) }}</span>
     </footer>
   </RouterLink>

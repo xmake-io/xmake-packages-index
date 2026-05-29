@@ -11,14 +11,18 @@ type Sort = 'name' | 'updated' | 'added'
 
 const route = useRoute()
 const router = useRouter()
-const { index } = useIndex()
+const { index, error: indexError } = useIndex()
 
 const query = ref<string>(String(route.query.q ?? ''))
 const page = ref<number>(Number(route.query.page ?? 1) || 1)
 const letter = ref<string>(String(route.query.letter ?? ''))
 const platform = ref<string>(String(route.query.platform ?? ''))
 const license = ref<string>(String(route.query.license ?? ''))
-const sort = ref<Sort>((route.query.sort as Sort) || 'name')
+const sort = ref<Sort>('name')
+const initialSort = route.query.sort
+if (initialSort === 'updated' || initialSort === 'added' || initialSort === 'name') {
+  sort.value = initialSort
+}
 
 // Keep the URL in sync so users can share/bookmark filtered views.
 watch([query, page, letter, platform, license, sort], () => {
@@ -41,11 +45,17 @@ watch([query, letter, platform, license, sort], () => {
 })
 
 // Build the option lists from the dataset itself so we don't hard-code values
-// that drift over time.
+// that drift over time. `platforms` is defensively coerced to an array — empty
+// Lua tables can serialize as `{}` rather than `[]`, and a single bad entry
+// would otherwise crash the whole listing with a `for...of` TypeError.
+function plats(p: { platforms: unknown }): string[] {
+  return Array.isArray(p.platforms) ? (p.platforms as string[]) : []
+}
+
 const platformOptions = computed(() => {
   if (!index.value) return []
   const set = new Set<string>()
-  for (const p of index.value.packages) for (const plat of p.platforms) set.add(plat)
+  for (const p of index.value.packages) for (const plat of plats(p)) set.add(plat)
   return [...set].sort()
 })
 
@@ -65,7 +75,7 @@ const filtered = computed(() => {
   if (!index.value) return []
   let list = index.value.packages
   if (letter.value) list = list.filter((p) => p.letter === letter.value)
-  if (platform.value) list = list.filter((p) => p.platforms.includes(platform.value))
+  if (platform.value) list = list.filter((p) => plats(p).includes(platform.value))
   if (license.value) list = list.filter((p) => licenseText(p.license) === license.value)
   const q = query.value.trim().toLowerCase()
   if (q) {
@@ -165,7 +175,12 @@ const hasFilters = computed(
       </div>
     </div>
 
-    <LoadingState v-if="!index" />
+    <div v-if="indexError" class="error">
+      Couldn't load <code>/data/index.json</code> — {{ indexError }}.
+      <br />
+      <small>Run <code>./build.sh --data-only</code> (or <code>./run.sh --refresh</code>) to regenerate the dataset.</small>
+    </div>
+    <LoadingState v-else-if="!index" />
     <template v-else>
       <PackageList v-if="paged.length" :packages="paged" />
       <p v-else class="empty muted">No packages match your filters.</p>
@@ -273,6 +288,19 @@ const hasFilters = computed(
 }
 
 .empty { padding: var(--space-12) 0; text-align: center; }
+
+.error {
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid #f5c2c0;
+  background: #fff5f5;
+  color: #c0392b;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  line-height: 1.55;
+}
+.error small { color: var(--c-text-3); }
+.error code { background: rgba(0,0,0,0.04); }
+:global(.dark) .error { background: rgba(192, 57, 43, 0.08); border-color: rgba(192, 57, 43, 0.4); color: #f8b4ad; }
 
 .pager {
   display: flex;
