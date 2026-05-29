@@ -18,12 +18,7 @@ function onSearch() {
   <header class="app-header">
     <div class="container app-header__inner">
       <RouterLink :to="{ name: 'home' }" class="brand">
-        <span class="brand__logo" aria-hidden="true">
-          <svg viewBox="0 0 32 32" width="28" height="28">
-            <rect width="32" height="32" rx="6" fill="var(--c-brand-3)" />
-            <path d="M8 11h16v3H8zM8 17h12v3H8zM8 23h8v3H8z" fill="#fff" />
-          </svg>
-        </span>
+        <img class="brand__logo" src="/logo.svg" alt="" width="28" height="28" />
         <span class="brand__name">{{ config.site.name }}</span>
       </RouterLink>
 
@@ -79,7 +74,13 @@ function onSearch() {
   font-size: 17px;
 }
 .brand:hover { color: var(--c-text-1); }
-.brand__logo { display: inline-flex; }
+.brand__logo {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  /* The SVG is square; let the browser scale gracefully on hi-DPI displays. */
+  object-fit: contain;
+}
 
 .search {
   flex: 1;
