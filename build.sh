@@ -17,6 +17,8 @@
 #   VITE_BASE        — passed through to Vite; defaults to "/"
 #   XMAKE_VERSION    — pin a specific xmake git ref (tag like v2.9.9, or branch
 #                      like branch@dev). Empty = default stable release.
+#   XMAKE_ROOT=y     — auto-set; allows xmake to run as root (needed in CI
+#                      containers like Oryx that run as uid 0).
 #   NO_INSTALL=1     — refuse to bootstrap xmake; fail if missing
 #   FULL_HISTORY=1   — clone xmake-repo with full blobs (default: blob-filtered)
 
