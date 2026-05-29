@@ -27,6 +27,10 @@ const highlighted = computed(() => highlight(props.code, props.language))
   border: 1px solid var(--c-border);
   border-radius: var(--radius-md);
   overflow: hidden;
+  /* Inside flex / grid parents, declare a min-width so a long, unwrapped
+     code line can scroll inside the block rather than expanding the page. */
+  min-width: 0;
+  max-width: 100%;
 }
 .code-block__header {
   display: flex;

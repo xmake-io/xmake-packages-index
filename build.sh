@@ -2,20 +2,20 @@
 # Full local build: refresh xmake-repo checkout, regenerate the JSON dataset,
 # then produce a static site under web/dist/. The same flow runs in CI.
 #
-# This script auto-installs xmake when missing (Linux/macOS), so a fresh CI
-# runner needs only `./build.sh` — no separate setup step required.
+# In CI the xmake-io/github-action-setup-xmake action provisions xmake before
+# this script runs; for local development install xmake yourself once
+# (https://xmake.io). This script never installs tools — it just checks they
+# are on PATH and fails with an actionable message otherwise.
 #
 # Usage:
-#   ./build.sh                # full build (install xmake if missing, fetch repo, build data + site)
+#   ./build.sh                # full build (fetch repo, build data + site)
 #   ./build.sh --no-pull      # reuse existing xmake-repo checkout, don't fetch
 #   ./build.sh --data-only    # only regenerate JSON, skip the Vue build
 #   ./build.sh --site-only    # only run the Vue build (assumes data is fresh)
 #
 # Env knobs:
 #   VITE_BASE        — passed through to Vite; defaults to "/"
-#   XMAKE_VERSION    — pin a specific xmake tag when bootstrap installs (default: latest)
 #   FULL_HISTORY=1   — clone xmake-repo with full blobs (default: blob-filtered)
-#   NO_INSTALL=1     — never auto-install tooling; fail loudly if anything is missing
 
 set -euo pipefail
 
@@ -23,7 +23,6 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG="$ROOT/site.config.json"
 
 log()  { printf '\033[1;32m>>\033[0m %s\n' "$*"; }
-warn() { printf '\033[1;33m!!\033[0m %s\n' "$*" >&2; }
 fail() { printf '\033[1;31m!!\033[0m %s\n' "$*" >&2; exit 1; }
 
 # Tiny JSON probe so we don't need jq as a hard dependency for two values.
@@ -40,59 +39,18 @@ print(v)
 PY
 }
 
-# -----------------------------------------------------------------------------
-# Bootstrap: make sure git, python3, node, npm and xmake are all on PATH.
-# Anything but xmake is treated as a prerequisite (CI runners come with these);
-# xmake is auto-installed via the upstream installer when missing.
-# -----------------------------------------------------------------------------
-
 ensure_command() {
-  local cmd=$1 label=${2:-$1}
-  command -v "$cmd" >/dev/null 2>&1 || fail "$label is required but not on PATH"
-}
-
-install_xmake() {
-  [[ "${NO_INSTALL:-0}" == "1" ]] && fail "xmake missing and NO_INSTALL=1 — install xmake or unset NO_INSTALL"
-
-  local ver="${XMAKE_VERSION:-latest}"
-  case "$(uname -s)" in
-    Linux)
-      log "installing xmake (Linux) via xmake.io/shget.text"
-      # Official one-liner — runs without sudo into ~/.local/bin.
-      curl -fsSL https://xmake.io/shget.text | bash -s "$ver"
-      ;;
-    Darwin)
-      if command -v brew >/dev/null 2>&1; then
-        log "installing xmake (macOS) via Homebrew"
-        brew install xmake
-      else
-        log "installing xmake (macOS) via xmake.io/shget.text"
-        curl -fsSL https://xmake.io/shget.text | bash -s "$ver"
-      fi
-      ;;
-    MINGW*|MSYS*|CYGWIN*)
-      fail "auto-install of xmake on Windows is not supported here — install from https://xmake.io and rerun"
-      ;;
-    *)
-      fail "unsupported platform $(uname -s) — install xmake manually from https://xmake.io"
-      ;;
-  esac
-
-  # xmake.io's installer writes to ~/.local/bin; CI shells often don't have it on PATH yet.
-  export PATH="$HOME/.local/bin:$PATH"
-  command -v xmake >/dev/null 2>&1 || fail "xmake still not on PATH after install (looked in \$HOME/.local/bin)"
-  xmake --version | head -n 1
-}
-
-ensure_xmake() {
-  if command -v xmake >/dev/null 2>&1; then
-    return
+  local cmd=$1 label=${2:-$1} hint=${3:-}
+  command -v "$cmd" >/dev/null 2>&1 && return
+  if [[ -n "$hint" ]]; then
+    fail "$label is required but not on PATH — $hint"
+  else
+    fail "$label is required but not on PATH"
   fi
-  install_xmake
 }
 
 ensure_node() {
-  ensure_command node Node.js
+  ensure_command node Node.js 'install Node.js 18+ from https://nodejs.org'
   local v=$(node -p 'process.versions.node.split(".").map(Number)[0]')
   if [[ "$v" -lt 18 ]]; then
     fail "Node.js >= 18 required (have $(node --version))"
@@ -135,7 +93,7 @@ LATEST_DAYS=$(read_config build.latestWindowDays)
 # -----------------------------------------------------------------------------
 
 if [[ "$DO_DATA" == 1 ]]; then
-  ensure_xmake
+  ensure_command xmake xmake 'install via https://xmake.io (or use xmake-io/github-action-setup-xmake in CI)'
 
   if [[ ! -d "$REPO_DIR/.git" ]]; then
     log "cloning $REPO_URL into $REPO_DIR"

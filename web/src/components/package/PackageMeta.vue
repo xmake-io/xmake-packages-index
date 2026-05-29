@@ -52,7 +52,11 @@ defineProps<{ pkg: PackageDetail }>()
 .meta dd {
   margin: 0;
   color: var(--c-text-1);
-  word-break: break-word;
+  /* overflow-wrap: anywhere breaks long URLs (no spaces) anywhere they don't
+     fit — the older `word-break: break-word` only breaks when the whole
+     token can't possibly fit, which lets URLs overflow narrow phone widths. */
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 .meta dd a { color: var(--c-brand-3); }
 .meta dd .chip { margin-right: 4px; }

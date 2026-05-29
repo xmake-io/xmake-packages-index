@@ -24,9 +24,15 @@ jobs:
       - name: Checkout site repo
         uses: actions/checkout@v4
 
-      # build.sh auto-installs xmake when missing; node, npm, git, curl,
-      # python3 are all preinstalled on ubuntu-latest. Caching npm + the
-      # xmake-repo checkout makes hourly reruns finish in well under a minute.
+      # Provision xmake via the official action instead of having build.sh
+      # bootstrap it — keeps the CI step explicit and lets us pin/branch
+      # easily without touching the script.
+      - uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: latest
+
+      # node, npm, git, curl, python3 are preinstalled on ubuntu-latest.
+      # Cache npm + the xmake-repo checkout so hourly reruns finish quickly.
       - name: Cache npm + xmake-repo checkout
         uses: actions/cache@v4
         with:

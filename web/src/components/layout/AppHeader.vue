@@ -149,6 +149,14 @@ function onSearch() {
 
 @media (max-width: 640px) {
   .brand__name { display: none; }
+  .app-header__inner { gap: var(--space-2); }
+  .search { margin: 0; }
+}
+
+@media (max-width: 480px) {
+  /* Below ~iPhone SE width the search input takes too much room. Collapse
+     it into the nav menu instead — users tap the burger to reach it. */
+  .search { display: none; }
 }
 
 @media (max-width: 860px) {

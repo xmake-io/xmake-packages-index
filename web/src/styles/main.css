@@ -19,6 +19,10 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Last-resort guard: any rogue child that escapes its container should
+     scroll inside its own box (overflow-x: auto), not push the document
+     sideways. This is here as a safety net, not the primary fix. */
+  overflow-x: hidden;
 }
 
 #app {

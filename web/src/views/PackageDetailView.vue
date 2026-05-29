@@ -90,6 +90,12 @@ const quickRequire = computed(() => {
         </section>
       </div>
 
+      <section class="detail__section">
+        <h2>Install &amp; integrate</h2>
+        <p class="muted detail__hint">Walkthroughs for the three common workflows.</p>
+        <PackageUsage :pkg="pkg" />
+      </section>
+
       <section v-if="pkg.package_source" class="detail__section">
         <h2>Package recipe <span class="muted">xmake.lua</span></h2>
         <p class="muted detail__hint">
@@ -99,12 +105,6 @@ const quickRequire = computed(() => {
           </a>
         </p>
         <CodeBlock :code="pkg.package_source" language="lua" title="xmake.lua" />
-      </section>
-
-      <section class="detail__section">
-        <h2>Install &amp; integrate</h2>
-        <p class="muted detail__hint">Walkthroughs for the three common workflows.</p>
-        <PackageUsage :pkg="pkg" />
       </section>
     </template>
   </div>
