@@ -65,6 +65,10 @@ ensure_node() {
 # step. Done once up-front so later `command -v xmake` checks see it.
 export PATH="$HOME/.local/bin:$PATH"
 
+# CI containers (Oryx, in particular) execute as root, and xmake refuses to
+# run as root unless this env var opts in. No-op for non-root invocations.
+export XMAKE_ROOT=y
+
 ensure_xmake() {
   if command -v xmake >/dev/null 2>&1; then return; fi
 
