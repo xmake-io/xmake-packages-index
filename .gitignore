@@ -8,6 +8,7 @@ web/node_modules/
 # build outputs
 web/dist/
 web/public/data/
+web/public/repology_packages_index.json
 
 # indexer working dirs
 .cache/

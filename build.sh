@@ -160,6 +160,11 @@ if [[ "$DO_DATA" == 1 ]]; then
     --repo="$REPO_DIR" \
     --out="$DATA_DIR" \
     --latest_days="$LATEST_DAYS"
+
+  log "generating Repology index"
+  xmake l "$ROOT/indexer/build_repology.lua" \
+    --repo="$REPO_DIR" \
+    --out="$ROOT/web/public/repology_packages_index.json"
 fi
 
 # -----------------------------------------------------------------------------
