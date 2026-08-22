@@ -1,6 +1,6 @@
 # xmake-packages-index
 
-Browse, search and integrate C/C++ packages from
+Browse, search and integrate C/C++ packages and xmake addons from
 [xmake-repo](https://github.com/xmake-io/xmake-repo).
 A static Vue 3 site backed by a JSON dataset that is regenerated hourly via
 GitHub Actions.
@@ -22,7 +22,8 @@ xmake-packages-index/
 ├── web/                      # Vue 3 + Vite static site
 │   ├── public/data/          # JSON dataset (gitignored; populated by build.sh)
 │   └── src/
-│       ├── views/            # HomeView, PackagesView, PackageDetailView, …
+│       ├── views/            # HomeView, PackagesView, PackageDetailView,
+│       │                     # AddonsView, AddonDetailView, …
 │       ├── components/
 │       │   ├── layout/       # AppHeader, AppFooter, AdBar, ThemeToggle
 │       │   ├── package/      # PackageCard, PackageMeta, PackageConfigs, …
@@ -61,6 +62,20 @@ The indexer writes four kinds of file into `web/public/data/`:
 | `latest.json` | Recently added + recently updated buckets (home feed) |
 | `stats.json`  | Total counts + last generated timestamp |
 | `packages/<name>.json` | Per-package detail document |
+| `addons.json` | Compact summary list of the addons |
+| `addons/<name>.json` | Per-addon detail document |
+
+xmake-repo keeps two kinds of recipe and they are installed in completely
+different ways, so they get their own dataset and their own pages:
+
+| Recipe | Repo path | Installed with | Site route |
+| --- | --- | --- | --- |
+| C/C++ package | `packages/<letter>/<name>` | `add_requires` / `xrepo install` | `/packages/<name>` |
+| Addon | `addons/<letter>/<name>` | `add_addons` / `xmake addon --install` | `/addons/<name>` |
+
+Addons carry plugins, rules, toolchains, project templates and lua modules;
+a summary document carries its `kind`, so the shared listing components link
+each entry to the right detail page.
 
 Schema is defined in `web/src/types/index.ts` and produced by
 `indexer/lib/package_info.lua`.

@@ -2,10 +2,10 @@
 // are instant; on first visit we surface loading/error state for the view.
 
 import { ref, watch } from 'vue'
-import { loadPackage } from '@/lib/data'
+import { loadAddon, loadPackage } from '@/lib/data'
 import type { PackageDetail } from '@/types'
 
-export function usePackage(nameRef: () => string) {
+export function usePackage(nameRef: () => string, loader = loadPackage) {
   const pkg = ref<PackageDetail | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -17,7 +17,7 @@ export function usePackage(nameRef: () => string) {
     error.value = null
     pkg.value = null
     try {
-      pkg.value = await loadPackage(n)
+      pkg.value = await loader(n)
     } catch (e) {
       error.value = String(e)
     } finally {
@@ -27,4 +27,9 @@ export function usePackage(nameRef: () => string) {
 
   watch(nameRef, load, { immediate: true })
   return { pkg, loading, error }
+}
+
+// The addon documents have the same shape, they only live in another dataset.
+export function useAddon(nameRef: () => string) {
+  return usePackage(nameRef, loadAddon)
 }

@@ -3,7 +3,7 @@
 // Each group renders as its own card in PackageUsage so users can scan to the
 // relevant section instead of guessing which of N unlabeled snippets to copy.
 
-import type { PackageDetail } from '@/types'
+import type { AddonDetail, PackageDetail } from '@/types'
 
 export interface Snippet {
   label: string
@@ -55,4 +55,54 @@ export function snippetGroups(pkg: PackageDetail): SnippetGroup[] {
       ],
     },
   ]
+}
+
+// Addons are not linked into a target — they extend xmake itself with plugins,
+// rules, toolchains, templates and modules. So they have their own snippets:
+// install them once with the CLI, or let a project pull them automatically.
+export function addonSnippetGroups(addon: AddonDetail): SnippetGroup[] {
+  const name = addon.name
+  const ver = addon.latest_version
+  const withVer = ver ? `${name} ${ver}` : name
+  const repo = addon.repository_url?.replace(/\.git$/, '')
+
+  const fromSource: Snippet[] = []
+  if (repo) {
+    const shortcut = repo.match(/^https:\/\/github\.com\/(.+)$/)
+    if (shortcut) {
+      fromSource.push({ label: 'from github', language: 'bash', code: `xmake addon --install github:${shortcut[1]}` })
+    }
+    fromSource.push({ label: 'from a local clone', language: 'bash', code: `xmake addon --install /path/to/${name}` })
+  }
+
+  const groups: SnippetGroup[] = [
+    {
+      id: 'install',
+      title: 'Install the addon',
+      description: 'Install it by name, xmake resolves it from the xmake-repo index.',
+      snippets: [
+        { label: 'install', language: 'bash', code: `xmake addon --install "${withVer}"` },
+        { label: 'list installed', language: 'bash', code: 'xmake addon --list' },
+        { label: 'remove', language: 'bash', code: `xmake addon --remove ${name}` },
+      ],
+    },
+    {
+      id: 'project',
+      title: 'Use it in a project',
+      description:
+        'Declare it in xmake.lua, it is installed automatically when the project is loaded.',
+      snippets: [
+        { label: 'xmake.lua', language: 'lua', code: ver ? `add_addons("${name} ${ver}")` : `add_addons("${name}")` },
+      ],
+    },
+  ]
+  if (fromSource.length > 0) {
+    groups.push({
+      id: 'source',
+      title: 'Install from the source',
+      description: 'Useful to try a branch or to develop the addon itself.',
+      snippets: fromSource,
+    })
+  }
+  return groups
 }

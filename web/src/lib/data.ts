@@ -2,7 +2,7 @@
 // We cache responses so navigating back to /packages doesn't re-download index.json.
 
 import { dataUrl } from '@/config'
-import type { IndexFile, LatestFile, PackageDetail, StatsFile } from '@/types'
+import type { AddonDetail, AddonsFile, IndexFile, LatestFile, PackageDetail, StatsFile } from '@/types'
 
 const cache = new Map<string, unknown>()
 
@@ -20,3 +20,6 @@ export const loadLatest = () => fetchJson<LatestFile>('latest.json')
 export const loadStats = () => fetchJson<StatsFile>('stats.json')
 export const loadPackage = (name: string) =>
   fetchJson<PackageDetail>(`packages/${encodeURIComponent(name)}.json`)
+export const loadAddons = () => fetchJson<AddonsFile>('addons.json')
+export const loadAddon = (name: string) =>
+  fetchJson<AddonDetail>(`addons/${encodeURIComponent(name)}.json`)

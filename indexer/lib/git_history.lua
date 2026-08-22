@@ -10,19 +10,23 @@
 -- `<name>/<version>/...`. We only key off the modern layout — older commits
 -- still register against the current path as soon as the package is renamed
 -- or moved into place, which is what we want for "first appeared" semantics.
-local function _pkg_key(filepath)
-    local letter, name = filepath:match("^packages/([^/]+)/([^/]+)/")
+local function _pkg_key(filepath, rootdir)
+    local letter, name = filepath:match("^" .. rootdir .. "/([^/]+)/([^/]+)/")
     if not letter or not name then return nil end
     return letter .. "/" .. name
 end
 
 -- Walk `git log --name-only --reverse --format=COMMIT %aI` output and build:
---   added[key]   = ISO date of the commit that first touched packages/<key>/
---   updated[key] = ISO date of the most recent commit touching packages/<key>/
+--   added[key]   = ISO date of the commit that first touched <rootdir>/<key>/
+--   updated[key] = ISO date of the most recent commit touching <rootdir>/<key>/
+--
+-- `rootdir` is the top-level directory of the recipes, xmake-repo keeps the
+-- C/C++ packages in `packages/` and the addons in `addons/`.
 --
 -- We use os.iorunv so xmake captures both stdout/stderr correctly and raises
 -- a structured error if git is missing rather than producing silent partials.
-function load(repodir)
+function load(repodir, rootdir)
+    rootdir = rootdir or "packages"
     local added, updated = {}, {}
     local oldir = os.cd(repodir)
     local raw
@@ -30,7 +34,7 @@ function load(repodir)
         function ()
             raw = os.iorunv("git", {
                 "log", "--reverse", "--name-only", "--no-merges",
-                "--format=COMMIT %aI", "--", "packages/",
+                "--format=COMMIT %aI", "--", rootdir .. "/",
             })
         end,
         catch {
@@ -47,7 +51,7 @@ function load(repodir)
         if d then
             current_date = d
         elseif current_date then
-            local key = _pkg_key(line)
+            local key = _pkg_key(line, rootdir)
             if key then
                 if not added[key] then added[key] = current_date end
                 updated[key] = current_date

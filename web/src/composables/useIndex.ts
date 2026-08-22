@@ -3,18 +3,21 @@
 // home page loads both; we don't want one taking down the other).
 
 import { ref } from 'vue'
-import { loadIndex, loadLatest, loadStats } from '@/lib/data'
-import type { IndexFile, LatestFile, StatsFile } from '@/types'
+import { loadAddons, loadIndex, loadLatest, loadStats } from '@/lib/data'
+import type { AddonsFile, IndexFile, LatestFile, StatsFile } from '@/types'
 
 const index = ref<IndexFile | null>(null)
+const addons = ref<AddonsFile | null>(null)
 const latest = ref<LatestFile | null>(null)
 const stats = ref<StatsFile | null>(null)
 
 const indexError = ref<string | null>(null)
+const addonsError = ref<string | null>(null)
 const latestError = ref<string | null>(null)
 const statsError = ref<string | null>(null)
 
 let indexPromise: Promise<void> | null = null
+let addonsPromise: Promise<void> | null = null
 let latestPromise: Promise<void> | null = null
 let statsPromise: Promise<void> | null = null
 
@@ -31,6 +34,20 @@ export function useIndex() {
       })
   }
   return { index, error: indexError, ready: indexPromise }
+}
+
+export function useAddons() {
+  if (!addonsPromise) {
+    addonsPromise = loadAddons()
+      .then((d) => {
+        addons.value = d
+      })
+      .catch((e) => {
+        addonsError.value = String(e)
+        console.error('[useAddons] failed to load addons.json', e)
+      })
+  }
+  return { addons, error: addonsError, ready: addonsPromise }
 }
 
 export function useLatest() {

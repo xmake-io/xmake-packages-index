@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { PackageDetail } from '@/types'
-import { snippetGroups } from '@/lib/usage'
+import { addonSnippetGroups, snippetGroups } from '@/lib/usage'
 import CodeBlock from '@/components/ui/CodeBlock.vue'
 
-const props = defineProps<{ pkg: PackageDetail }>()
-const groups = computed(() => snippetGroups(props.pkg))
+// The addons are installed with `xmake addon`, not with `add_requires`,
+// so they get their own snippets, @see @/lib/usage
+const props = defineProps<{ pkg: PackageDetail; addon?: boolean }>()
+const groups = computed(() =>
+  props.addon ? addonSnippetGroups(props.pkg) : snippetGroups(props.pkg),
+)
 </script>
 
 <template>

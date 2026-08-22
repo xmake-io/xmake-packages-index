@@ -5,6 +5,8 @@
 //   dist/packages/index.html   (listing page)
 //   dist/about/index.html
 //   dist/packages/<name>/index.html   (one per package)
+//   dist/addons/index.html            (addons listing)
+//   dist/addons/<name>/index.html     (one per addon)
 //   dist/404.html              (SPA fallback for unknown URLs)
 //
 // We don't render Vue components server-side — the page shell + JS bundle
@@ -68,6 +70,10 @@ async function main() {
     title: `Packages · ${siteName}`,
     description: 'Browse and search all xmake-repo packages.',
   }))
+  await writeRoute('/addons', withMeta(shell, {
+    title: `Addons · ${siteName}`,
+    description: 'Browse the xmake addons: plugins, rules, toolchains, templates and modules.',
+  }))
   await writeRoute('/about', withMeta(shell, {
     title: `About · ${siteName}`,
     description: 'About the xmake-repo package index.',
@@ -92,7 +98,25 @@ async function main() {
     )
     count++
   }
-  console.log(`prerender: emitted ${count + 4} HTML files`)
+  // Per-addon routes from addons.json. It is optional: an older dataset,
+  // or an xmake-repo checkout without `addons/`, simply has no such file.
+  try {
+    const addons = JSON.parse(await fs.readFile(path.join(dataDir, 'addons.json'), 'utf8'))
+    for (const a of addons.addons ?? []) {
+      if (!a.name) continue
+      const desc = (a.description || siteCfg.site.description).slice(0, 200)
+      await writeRoute(
+        `/addons/${a.name}`,
+        withMeta(shell, { title: `${a.name} · Addons · ${siteName}`, description: desc }),
+      )
+      count++
+    }
+  } catch (err) {
+    if (err.code !== 'ENOENT') throw err
+    console.warn('prerender: no addons.json, skipping the addon routes')
+  }
+
+  console.log(`prerender: emitted ${count + 5} HTML files`)
 }
 
 main().catch((err) => {

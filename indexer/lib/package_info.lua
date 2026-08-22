@@ -268,6 +268,9 @@ function summary(d)
         name           = d.name,
         description    = d.description,
         license        = d.license,
+        -- the kind tells the listing which detail page a summary links to,
+        -- e.g. an addon is installed and displayed in its own section
+        kind           = d.kind,
         latest_version = d.latest_version,
         letter         = d.letter,
         platforms      = _array(plats),

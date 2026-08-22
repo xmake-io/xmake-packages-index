@@ -10,12 +10,20 @@ const props = defineProps<{ pkg: PackageSummary }>()
 const platforms = computed(() =>
   Array.isArray(props.pkg.platforms) ? props.pkg.platforms : [],
 )
+
+// The home feed mixes packages and addons, they have their own detail pages,
+// and an addon is marked as such — a package needs no badge, it is the default.
+const isAddon = computed(() => props.pkg.kind === 'addon')
+const route = computed(() => (isAddon.value ? 'addon-detail' : 'package-detail'))
 </script>
 
 <template>
-  <RouterLink class="pkg-card card" :to="{ name: 'package-detail', params: { name: pkg.name } }">
+  <RouterLink class="pkg-card card" :to="{ name: route, params: { name: pkg.name } }">
     <header class="pkg-card__head">
       <h3 class="pkg-card__name">{{ pkg.name }}</h3>
+      <span v-if="isAddon" class="badge-addon" title="An xmake addon, install it with `xmake addon`">
+        addon
+      </span>
       <span v-if="pkg.latest_version" class="chip chip--brand">{{ pkg.latest_version }}</span>
     </header>
     <p v-if="pkg.description" class="pkg-card__desc">{{ pkg.description }}</p>
@@ -28,6 +36,21 @@ const platforms = computed(() =>
 </template>
 
 <style scoped>
+/* The addon badge sits next to the name so it reads as part of the title,
+   the version chip stays pinned to the right edge of the card. */
+.badge-addon {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: var(--radius-sm, 4px);
+  background: var(--c-brand-soft);
+  color: var(--c-brand-3);
+  border: 1px solid color-mix(in srgb, var(--c-brand-3) 35%, transparent);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  letter-spacing: 0.02em;
+  text-transform: lowercase;
+}
 .pkg-card {
   display: flex;
   flex-direction: column;
@@ -39,8 +62,11 @@ const platforms = computed(() =>
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
+/* The name takes the free space, so the badge hugs it instead of floating
+   in the middle of the card. */
+.pkg-card__head .chip--brand { margin-left: auto; }
 .pkg-card__name {
   font-size: 16px;
   font-weight: 600;

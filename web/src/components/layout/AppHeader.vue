@@ -33,6 +33,7 @@ function onSearch() {
 
       <nav class="nav" :class="{ 'nav--open': menuOpen }">
         <RouterLink :to="{ name: 'packages' }" @click="menuOpen = false">Packages</RouterLink>
+        <RouterLink :to="{ name: 'addons' }" @click="menuOpen = false">Addons</RouterLink>
         <RouterLink :to="{ name: 'about' }" @click="menuOpen = false">About</RouterLink>
         <a :href="config.site.docs" target="_blank" rel="noopener">Docs</a>
         <a :href="config.site.github" target="_blank" rel="noopener">GitHub</a>

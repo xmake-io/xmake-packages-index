@@ -12,6 +12,13 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/PackageDetailView.vue'),
     props: true,
   },
+  { path: '/addons', name: 'addons', component: () => import('@/views/AddonsView.vue') },
+  {
+    path: '/addons/:name',
+    name: 'addon-detail',
+    component: () => import('@/views/AddonDetailView.vue'),
+    props: true,
+  },
   { path: '/about', name: 'about', component: () => import('@/views/AboutView.vue') },
   { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('@/views/NotFoundView.vue') },
 ]
