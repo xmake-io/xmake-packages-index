@@ -37,6 +37,9 @@ jobs:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_KIND_BAY_069173110 }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
+          # PRs from forks don't get the Azure token; still run the build so
+          # CI validates the change, just skip the preview deployment.
+          skip_deploy_on_missing_secrets: true
           ###### Repository/Build Configurations ######
           app_location: "/"                       # source root
           api_location: ""
