@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useIndex } from '@/composables/useIndex'
 import PackageList from '@/components/package/PackageList.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
 import { licenseText, platformLabel } from '@/lib/format'
 import { config } from '@/config'
+import { searchPackages } from '@/lib/search'
 
 type Sort = 'name' | 'updated' | 'added'
 
@@ -24,12 +25,28 @@ if (initialSort === 'updated' || initialSort === 'added' || initialSort === 'nam
   sort.value = initialSort
 }
 
+let restoringRoute = false
+watch(() => route.query, async params => {
+  if (syncTimer) clearTimeout(syncTimer)
+  restoringRoute = true
+  query.value = String(params.q ?? '')
+  letter.value = String(params.letter ?? '')
+  platform.value = String(params.platform ?? '')
+  license.value = String(params.license ?? '')
+  sort.value = params.sort === 'updated' || params.sort === 'added' ? params.sort : 'name'
+  page.value = Number(params.page ?? 1) || 1
+  await nextTick()
+  restoringRoute = false
+})
+onBeforeUnmount(() => { if (syncTimer) clearTimeout(syncTimer) })
+
 // Keep the URL in sync so users can share/bookmark filtered views.
 // Debounced because users type into `query` one keystroke at a time — pushing
 // to history on every character is wasteful and (combined with any RouterView
 // :key="fullPath") would steal focus from the input.
 let syncTimer: ReturnType<typeof setTimeout> | null = null
 watch([query, page, letter, platform, license, sort], () => {
+  if (restoringRoute) return
   if (syncTimer) clearTimeout(syncTimer)
   syncTimer = setTimeout(() => {
     router.replace({
@@ -48,7 +65,7 @@ watch([query, page, letter, platform, license, sort], () => {
 
 // Any filter change resets to page 1; preserve scroll only on explicit page navigation.
 watch([query, letter, platform, license, sort], () => {
-  page.value = 1
+  if (!restoringRoute) page.value = 1
 })
 
 // Build the option lists from the dataset itself so we don't hard-code values
@@ -85,19 +102,13 @@ const filtered = computed(() => {
   if (platform.value) list = list.filter((p) => plats(p).includes(platform.value))
   if (license.value) list = list.filter((p) => licenseText(p.license) === license.value)
   const q = query.value.trim().toLowerCase()
-  if (q) {
-    list = list.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        (p.description ?? '').toLowerCase().includes(q),
-    )
-  }
+  if (q) list = searchPackages(list, q)
   const sorted = [...list]
   if (sort.value === 'updated') {
     sorted.sort((a, b) => (b.updated_at ?? '').localeCompare(a.updated_at ?? ''))
   } else if (sort.value === 'added') {
     sorted.sort((a, b) => (b.added_at ?? '').localeCompare(a.added_at ?? ''))
-  } else {
+  } else if (!q) {
     sorted.sort((a, b) => a.name.localeCompare(b.name))
   }
   return sorted
@@ -173,7 +184,7 @@ const hasFilters = computed(
         <label class="filters__group">
           <span>Sort</span>
           <select v-model="sort" aria-label="Sort packages">
-            <option value="name">Name</option>
+            <option value="name">{{ query.trim() ? 'Relevance' : 'Name' }}</option>
             <option value="updated">Recently updated</option>
             <option value="added">Recently added</option>
           </select>
