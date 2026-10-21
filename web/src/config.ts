@@ -13,6 +13,7 @@ export interface SiteConfig {
     github: string
     indexRepo: string
     docs: string
+    docsHome: string
   }
   ads: {
     carbon: { code: string; placement: string }

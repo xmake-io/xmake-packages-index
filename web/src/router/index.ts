@@ -1,3 +1,4 @@
+import { updatePageSeo } from '@/lib/seo'
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 
 // Clean URLs (no '#'). For each route, build.sh's prerender step emits a real
@@ -30,3 +31,5 @@ export const router = createRouter({
     return saved ?? { top: 0 }
   },
 })
+
+router.afterEach(to => updatePageSeo(to.path))

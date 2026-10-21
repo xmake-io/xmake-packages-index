@@ -23,7 +23,7 @@ const recentUpdated = computed(() => latest.value?.updated?.slice(0, 12) ?? [])
       <div class="hero__actions">
         <RouterLink class="btn btn--primary" :to="{ name: 'packages' }">Browse packages</RouterLink>
         <RouterLink class="btn" :to="{ name: 'addons' }">Browse addons</RouterLink>
-        <a class="btn" :href="config.site.docs" target="_blank" rel="noopener">Read the docs</a>
+        <a class="btn" :href="config.site.docs" target="_blank" rel="noopener">Package integration guide</a>
       </div>
       <p v-if="stats" class="hero__stats">
         Indexing <strong>{{ stats.total }}</strong> packages<template v-if="stats.addons">

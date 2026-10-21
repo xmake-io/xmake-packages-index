@@ -31,17 +31,19 @@ function onSearch() {
         />
       </form>
 
-      <nav class="nav" :class="{ 'nav--open': menuOpen }">
+      <a class="docs-home" :href="config.site.docsHome" aria-label="Back to Xmake documentation">← Xmake Docs</a>
+
+      <nav id="site-navigation" class="nav" :class="{ 'nav--open': menuOpen }">
         <RouterLink :to="{ name: 'packages' }" @click="menuOpen = false">Packages</RouterLink>
         <RouterLink :to="{ name: 'addons' }" @click="menuOpen = false">Addons</RouterLink>
         <RouterLink :to="{ name: 'about' }" @click="menuOpen = false">About</RouterLink>
-        <a :href="config.site.docs" target="_blank" rel="noopener">Docs</a>
+        <a :href="config.site.docs" target="_blank" rel="noopener">Package guide</a>
         <a :href="config.site.github" target="_blank" rel="noopener">GitHub</a>
       </nav>
 
       <div class="actions">
         <ThemeToggle />
-        <button class="menu-toggle" aria-label="Toggle menu" @click="menuOpen = !menuOpen">
+        <button class="menu-toggle" aria-label="Toggle menu" :aria-expanded="menuOpen" aria-controls="site-navigation" @click="menuOpen = !menuOpen">
           <span></span><span></span><span></span>
         </button>
       </div>
@@ -118,6 +120,9 @@ function onSearch() {
   color: var(--c-brand-3);
 }
 
+.docs-home { white-space: nowrap; font-size: 13px; font-weight: 600; }
+.docs-home:focus-visible { outline: 2px solid var(--c-brand-3); outline-offset: 4px; }
+
 .actions {
   display: inline-flex;
   align-items: center;
@@ -144,7 +149,7 @@ function onSearch() {
 }
 
 @media (max-width: 860px) {
-  .search { max-width: none; }
+  .search { max-width: none; min-width: 0; }
   .nav { display: none; }
   .menu-toggle { display: inline-flex; }
 }
@@ -152,6 +157,7 @@ function onSearch() {
 @media (max-width: 640px) {
   .brand__name { display: none; }
   .app-header__inner { gap: var(--space-2); }
+  .docs-home { margin-left: auto; }
   .search { margin: 0; }
 }
 

@@ -16,7 +16,8 @@ const { stats } = useStats()
       <div class="links">
         <a :href="config.site.github" target="_blank" rel="noopener">xmake-repo</a>
         <a :href="config.site.indexRepo" target="_blank" rel="noopener">Site source</a>
-        <a :href="config.site.docs" target="_blank" rel="noopener">Documentation</a>
+        <a :href="config.site.docsHome">Xmake documentation</a>
+        <a :href="config.site.docs">Package integration guide</a>
       </div>
     </div>
   </footer>

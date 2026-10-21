@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watchEffect } from 'vue'
+import { updatePageSeo } from '@/lib/seo'
 import { useAddon } from '@/composables/usePackage'
 import PackageMeta from '@/components/package/PackageMeta.vue'
 import PackageVersions from '@/components/package/PackageVersions.vue'
@@ -27,6 +28,10 @@ const quickInstall = computed(() => {
   return a.latest_version
     ? `xmake addon --install "${a.name} ${a.latest_version}"`
     : `xmake addon --install ${a.name}`
+})
+watchEffect(() => {
+  if (error.value?.includes(': 404')) updatePageSeo('/404')
+  else if (addon.value?.name === props.name) updatePageSeo('/addons/' + encodeURIComponent(props.name), addon.value)
 })
 </script>
 

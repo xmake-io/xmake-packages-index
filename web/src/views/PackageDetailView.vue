@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watchEffect } from 'vue'
+import { updatePageSeo } from '@/lib/seo'
 import { usePackage } from '@/composables/usePackage'
 import PackageMeta from '@/components/package/PackageMeta.vue'
 import PackagePlatforms from '@/components/package/PackagePlatforms.vue'
@@ -38,6 +39,10 @@ const quickRequire = computed(() => {
     ? `add_requires("${p.name} ${p.latest_version}")`
     : `add_requires("${p.name}")`
 })
+watchEffect(() => {
+  if (error.value?.includes(': 404')) updatePageSeo('/404')
+  else if (pkg.value?.name === props.name) updatePageSeo('/packages/' + encodeURIComponent(props.name), pkg.value)
+})
 </script>
 
 <template>
@@ -61,6 +66,7 @@ const quickRequire = computed(() => {
            what they want: the single add_requires call for their xmake.lua. -->
       <section class="quick">
         <CodeBlock :code="quickRequire" language="lua" title="Add to xmake.lua" />
+        <p class="integration-guide">New to Xmake? <a :href="config.site.docs">Learn how to add and link packages →</a></p>
       </section>
 
       <div class="detail__grid">
@@ -111,6 +117,7 @@ const quickRequire = computed(() => {
 </template>
 
 <style scoped>
+.integration-guide { margin: 12px 0 0; color: var(--c-text-2); font-size: 14px; }
 .detail__head {
   display: flex;
   justify-content: space-between;

@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build && node scripts/prerender.mjs",
-    "preview": "vite preview --host"
+    "preview": "vite preview --host",
+    "test": "node --test scripts/seo.test.mjs",
+    "check:seo": "node scripts/check-seo.mjs"
   },
   "dependencies": {
     "highlight.js": "^11.10.0",
