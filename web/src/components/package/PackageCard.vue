@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { PackageSummary } from '@/types'
-import { licenseText, platformLabel, relativeTime } from '@/lib/format'
+import { licenseText, platformLabel, relativeTime, supportsAllPlatforms } from '@/lib/format'
 
 const props = defineProps<{ pkg: PackageSummary }>()
 
@@ -10,6 +10,10 @@ const props = defineProps<{ pkg: PackageSummary }>()
 const platforms = computed(() =>
   Array.isArray(props.pkg.platforms) ? props.pkg.platforms : [],
 )
+
+const license = computed(() => licenseText(props.pkg.license))
+
+const allPlatforms = computed(() => supportsAllPlatforms(platforms.value))
 
 // The home feed mixes packages and addons, they have their own detail pages,
 // and an addon is marked as such — a package needs no badge, it is the default.
@@ -20,24 +24,44 @@ const route = computed(() => (isAddon.value ? 'addon-detail' : 'package-detail')
 <template>
   <RouterLink class="pkg-card card" :to="{ name: route, params: { name: pkg.name } }">
     <header class="pkg-card__head">
-      <h3 class="pkg-card__name">{{ pkg.name }}</h3>
-      <span v-if="isAddon" class="badge-addon" title="An xmake addon, install it with `xmake addon`">
-        addon
-      </span>
+      <div class="pkg-card__identity">
+        <h3 class="pkg-card__name" :title="pkg.name">{{ pkg.name }}</h3>
+        <span v-if="license" class="chip badge-license" :title="'License: ' + license" :aria-label="'License: ' + license">{{ license }}</span>
+        <span v-if="isAddon" class="badge-addon" title="An xmake addon, install it with `xmake addon`">
+          addon
+        </span>
+      </div>
       <span v-if="pkg.latest_version" class="chip chip--brand">{{ pkg.latest_version }}</span>
     </header>
     <p v-if="pkg.description" class="pkg-card__desc">{{ pkg.description }}</p>
     <footer class="pkg-card__meta">
-      <span v-if="pkg.license" class="chip">{{ licenseText(pkg.license) }}</span>
-      <span v-for="p in platforms" :key="p" class="chip">{{ platformLabel(p) }}</span>
+      <span v-if="allPlatforms" class="chip">All platforms</span>
+      <template v-else>
+        <span v-for="p in platforms" :key="p" class="chip">{{ platformLabel(p) }}</span>
+      </template>
       <span class="pkg-card__time" v-if="pkg.updated_at">{{ relativeTime(pkg.updated_at) }}</span>
     </footer>
   </RouterLink>
 </template>
 
 <style scoped>
-/* The addon badge sits next to the name so it reads as part of the title,
-   the version chip stays pinned to the right edge of the card. */
+/* License metadata stays with the package identity, apart from platforms. */
+.pkg-card__identity {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  min-width: 0;
+}
+.badge-license {
+  max-width: 100%;
+  background: var(--c-brand-soft);
+  color: var(--c-brand-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .badge-addon {
   flex: none;
   padding: 1px 7px;
@@ -61,18 +85,23 @@ const route = computed(() => (isAddon.value ? 'addon-detail' : 'package-detail')
 .pkg-card__head {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-2);
 }
-/* The name takes the free space, so the badge hugs it instead of floating
-   in the middle of the card. */
-.pkg-card__head .chip--brand { margin-left: auto; }
+.pkg-card__head .chip--brand {
+  flex-shrink: 0;
+  max-width: 40%;
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .pkg-card__name {
   font-size: 16px;
   font-weight: 600;
   color: var(--c-text-1);
   margin: 0;
-  /* Long package names should ellipsize, not push the version chip off-card */
+  max-width: 100%;
+  /* Keep long names inside the identity column. */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

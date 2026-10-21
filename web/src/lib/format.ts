@@ -41,3 +41,12 @@ export function platformLabel(plat: string): string {
   }
   return map[plat] ?? plat
 }
+
+// Keep this list aligned with PLATS in indexer/lib/package_info.lua.
+const indexedPlatforms = ['windows', 'linux', 'macosx', 'iphoneos', 'android', 'mingw', 'msys', 'bsd', 'wasm', 'cross', 'harmony']
+
+export function supportsAllPlatforms(platforms: unknown): boolean {
+  if (!Array.isArray(platforms)) return false
+  const supported = new Set(platforms)
+  return indexedPlatforms.every(platform => supported.has(platform))
+}
