@@ -7,6 +7,7 @@ import PackagePlatforms from '@/components/package/PackagePlatforms.vue'
 import PackageConfigs from '@/components/package/PackageConfigs.vue'
 import PackageVersions from '@/components/package/PackageVersions.vue'
 import PackageUsage from '@/components/package/PackageUsage.vue'
+import PackageDependents from '@/components/package/PackageDependents.vue'
 import PackageDeps from '@/components/package/PackageDeps.vue'
 import CodeBlock from '@/components/ui/CodeBlock.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
@@ -95,6 +96,8 @@ watchEffect(() => {
           <PackageDeps :deps="pkg.deps" />
         </section>
       </div>
+
+      <PackageDependents :name="pkg.name" />
 
       <section class="detail__section">
         <h2>Install &amp; integrate</h2>

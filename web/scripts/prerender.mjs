@@ -6,6 +6,8 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { pageMeta, metadataHtml, escapeHtml as e } from '../shared/seo.mjs'
 
+import { detailContent, lastModified } from '../shared/package-content.mjs'
+
 const webRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const dist = path.join(webRoot, 'dist')
 const data = path.join(webRoot, 'public/data')
@@ -20,6 +22,8 @@ const packages = JSON.parse(await fs.readFile(path.join(data, 'index.json'), 'ut
 let addons = []
 try { addons = JSON.parse(await fs.readFile(path.join(data, 'addons.json'), 'utf8')).addons || [] }
 catch (err) { if (err.code !== 'ENOENT') throw err }
+const relations = JSON.parse(await fs.readFile(path.join(data, 'package-relations.json'), 'utf8'))
+const packageNames = new Set(packages.map(p => p.name))
 const urls = []
 const nav = `<nav class="container" aria-label="Main navigation"><a href="${e(link('/'))}">Xmake Packages</a> · <a href="${e(link('/packages/'))}">Packages</a> · <a href="${e(link('/addons/'))}">Addons</a> · <a href="${e(site.docsHome)}">← Xmake Docs</a></nav>`
 const docs = `<p><a href="${e(site.docs)}">Learn how to add and link packages with Xmake →</a></p>`
@@ -36,7 +40,7 @@ async function emit(route, content, entry, notFound = false) {
   const file = notFound ? path.join(dist, '404.html') : path.join(dist, decodeURIComponent(route).replace(/^\//, ''), 'index.html')
   await fs.mkdir(path.dirname(file), { recursive: true })
   await fs.writeFile(file, html)
-  if (meta.indexable) urls.push(meta.canonical)
+  if (meta.indexable) urls.push({ loc: meta.canonical, lastmod: lastModified(entry?.updated_at) })
 }
 await emit('/', `<h1>Discover C/C++ packages for Xmake</h1><p>${e(site.description)}</p><p><a href="${e(link('/packages/'))}">Browse ${packages.length} packages</a> · <a href="${e(link('/addons/'))}">Browse addons</a></p>${docs}`)
 await emit('/packages', `<h1>C/C++ Packages</h1><p>Browse packages from xmake-repo. Open a package for versions and integration instructions.</p>${docs}${list(packages, 'packages')}`)
@@ -45,12 +49,15 @@ await emit('/about', `<h1>About Xmake Packages</h1><p>${e(site.description)}</p>
 for (const [kind, entries] of [['packages', packages], ['addons', addons]]) {
   for (const entry of entries) {
     const route = entryPath(kind, entry.name)
+    const detail = JSON.parse(await fs.readFile(path.join(data, kind, entry.name + '.json'), 'utf8'))
+    if (detail.name !== entry.name) throw new Error(`Detail mismatch: ${entry.name}`)
+    const extra = detailContent(detail, packageNames, kind === 'packages' ? relations[entry.name] || [] : [], link)
     const spec = entry.name + (entry.latest_version ? ' ' + entry.latest_version : '')
     const command = kind === 'packages' ? `add_requires(${JSON.stringify(spec)})` : `xmake addon --install ${JSON.stringify(spec)}`
-    await emit(route, `<p><a href="${e(link('/'+kind+'/'))}">${kind === 'packages' ? 'Packages' : 'Addons'}</a> / ${e(entry.name)}</p><h1>${e(entry.name)}</h1><p>${e(entry.description || '')}</p>${entry.latest_version ? `<p>Latest version: ${e(entry.latest_version)}</p>` : ''}<h2>${kind === 'packages' ? 'Add to xmake.lua' : 'Install addon'}</h2><pre><code>${e(command)}</code></pre>${kind === 'packages' ? docs : `<p><a href="${e(site.docsHome)}">Xmake documentation →</a></p>`}`, entry)
+    await emit(route, `<p><a href="${e(link('/'+kind+'/'))}">${kind === 'packages' ? 'Packages' : 'Addons'}</a> / ${e(entry.name)}</p><h1>${e(entry.name)}</h1><p>${e(entry.description || '')}</p>${entry.latest_version ? `<p>Latest version: ${e(entry.latest_version)}</p>` : ''}<h2>${kind === 'packages' ? 'Add to xmake.lua' : 'Install addon'}</h2><pre><code>${e(command)}</code></pre>${kind === 'packages' ? docs : `<p><a href="${e(site.docsHome)}">Xmake documentation →</a></p>`}${extra}`, { ...entry, ...detail })
   }
 }
 await emit('/404', `<h1>Page not found</h1><p><a href="${e(link('/packages/'))}">Browse packages</a> or <a href="${e(site.docsHome)}">return to Xmake documentation</a>.</p>`, undefined, true)
-await fs.writeFile(path.join(dist, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(url => `<url><loc>${e(url)}</loc></url>`).join('\n')}\n</urlset>\n`)
+await fs.writeFile(path.join(dist, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(url => `<url><loc>${e(url.loc)}</loc>${url.lastmod ? `<lastmod>${e(url.lastmod)}</lastmod>` : ''}</url>`).join('\n')}\n</urlset>\n`)
 await fs.writeFile(path.join(dist, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${site.url.replace(/\/$/, '')}/sitemap.xml\n`)
 console.log(`prerender: emitted ${urls.length + 1} readable HTML pages, sitemap.xml and robots.txt`)

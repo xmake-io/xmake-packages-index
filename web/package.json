@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc --noEmit && vite build && node scripts/prerender.mjs",
+    "build": "vue-tsc --noEmit && vite build && node scripts/prerender.mjs && node scripts/check-seo.mjs",
     "preview": "vite preview --host",
-    "test": "node --test scripts/seo.test.mjs",
-    "check:seo": "node scripts/check-seo.mjs"
+    "test": "node --test scripts/*.test.mjs",
+    "check:seo": "node scripts/check-seo.mjs",
+    "prebuild": "node --test scripts/*.test.mjs && node scripts/generate-relations.mjs",
+    "predev": "node scripts/generate-relations.mjs"
   },
   "dependencies": {
     "highlight.js": "^11.10.0",

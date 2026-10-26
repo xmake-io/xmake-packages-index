@@ -1,4 +1,5 @@
 import fs from 'node:fs'
+import { buildRelations, detailContent, lastModified } from '../shared/package-content.mjs'
 import path from 'node:path'
 import assert from 'node:assert/strict'
 import { fileURLToPath } from 'node:url'
@@ -27,3 +28,21 @@ assert.ok(missing.includes('noindex, follow'))
 assert.ok(!sitemap.includes('/404'))
 assert.ok(fs.readFileSync(path.join(dist,'robots.txt'),'utf8').includes(site.url+'/sitemap.xml'))
 console.log(`Verified ${urls.length} indexable pages: static content, canonical URLs, docs links, sitemap and robots.`)
+
+const names=new Set(index.packages.map(p=>p.name))
+const details=index.packages.map(p=>JSON.parse(fs.readFileSync(path.join(root,'public/data/packages',p.name+'.json'),'utf8')))
+const relations=JSON.parse(fs.readFileSync(path.join(dist,'data/package-relations.json'),'utf8'))
+assert.deepEqual(relations,buildRelations(details))
+const base=(process.env.VITE_BASE || '/').replace(/\/$/,'')
+const sitemapItems=[...sitemap.matchAll(/<url>(.*?)<\/url>/gs)].map(m=>m[1])
+for(const [kind,entries] of [['packages',index.packages],['addons',addons]]) for(const entry of entries){
+ const detail=JSON.parse(fs.readFileSync(path.join(root,'public/data',kind,entry.name+'.json'),'utf8'))
+ const html=fs.readFileSync(path.join(dist,kind,entry.name,'index.html'),'utf8')
+ assert.ok(html.includes(detailContent(detail,names,kind==='packages'?relations[entry.name]:[],route=>base+route)),entry.name+' missing static details')
+ const item=sitemapItems.find(item=>item.includes('/'+kind+'/'+encodeURIComponent(entry.name)+'/</loc>'))
+ assert.ok(item,entry.name+' missing sitemap entry')
+ const updated=lastModified(detail.updated_at)
+ if(updated)assert.ok(item.includes('<lastmod>'+updated+'</lastmod>'),entry.name+' incorrect lastmod')
+ else assert.ok(!item.includes('<lastmod>'),entry.name+' fabricated lastmod')
+}
+console.log('Verified static details, dependency relationships and source-based sitemap dates.')
