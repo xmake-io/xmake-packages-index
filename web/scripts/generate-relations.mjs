@@ -12,3 +12,16 @@ for (const pkg of packages) {
 }
 await fs.writeFile(new URL('package-relations.json', data), JSON.stringify(buildRelations(details)))
 console.log(`Generated dependency relationships for ${details.length} packages in ${fileURLToPath(data)}`)
+
+let addons = []
+try { addons = JSON.parse(await fs.readFile(new URL('addons.json', data), 'utf8')).addons || [] }
+catch (error) { if (error.code !== 'ENOENT') throw error }
+const addonDetails = []
+for (const addon of addons) {
+ if (!validName(addon.name)) throw new Error(`Invalid addon name: ${addon.name}`)
+ const detail = JSON.parse(await fs.readFile(new URL(`addons/${addon.name}.json`, data), 'utf8'))
+ if (detail.name !== addon.name) throw new Error(`Addon data mismatch: ${addon.name}`)
+ addonDetails.push(detail)
+}
+await fs.writeFile(new URL('addon-relations.json', data), JSON.stringify(buildRelations(addonDetails)))
+console.log(`Generated dependency relationships for ${addonDetails.length} addons`)

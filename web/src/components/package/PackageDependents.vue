@@ -1,23 +1,24 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { loadRelations } from '@/lib/data'
+import { loadRelations, loadAddonRelations } from '@/lib/data'
 import PackageRelationsList from './PackageRelationsList.vue'
 import PackageDependencyGraph from './PackageDependencyGraph.vue'
-const props = defineProps<{ name: string }>()
+const props = defineProps<{ name: string; addon?: boolean }>()
 const relations = ref<Record<string, string[]>>({})
 const dependents = computed(() => relations.value[props.name] ?? [])
 onMounted(async () => {
-  try { relations.value = await loadRelations() }
+  try { relations.value = await (props.addon ? loadAddonRelations() : loadRelations()) }
   catch (error) { console.warn('Could not load package relationships', error) }
 })
 </script>
 <template>
-  <section v-if="dependents.length" class="dependents">
+  <section v-if="dependents.length || (addon && Object.hasOwn(relations, name))" class="dependents">
     <h2>Used by <span>({{ dependents.length }})</span></h2>
-    <p>Packages declaring this dependency; requirements can vary by platform and configuration.</p>
-    <PackageRelationsList :names="dependents" :reset-key="name" label="Search dependent packages" />
+    <p>{{ addon ? 'Addons declaring this dependency.' : 'Packages declaring this dependency; requirements can vary by platform and configuration.' }}</p>
+    <PackageRelationsList v-if="dependents.length" :names="dependents" :reset-key="name" :label="addon ? 'Search dependent addons' : 'Search dependent packages'" :addon="addon" />
+    <p v-else>No indexed addons depend on this addon.</p>
   </section>
-  <PackageDependencyGraph v-if="Object.hasOwn(relations, name)" :name="name" :relations="relations" />
+  <PackageDependencyGraph v-if="Object.hasOwn(relations, name)" :name="name" :relations="relations" :addon="addon" />
 </template>
 <style scoped>
 .dependents { margin: var(--space-8) 0; }

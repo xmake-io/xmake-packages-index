@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PageBreadcrumbs from '@/components/ui/PageBreadcrumbs.vue'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAddons } from '@/composables/useIndex'
@@ -57,6 +58,8 @@ const filtered = computed(() => {
 
 <template>
   <div class="container addons">
+    <PageBreadcrumbs />
+    <p><RouterLink to="/categories/addons">Browse the addon category →</RouterLink></p>
     <header class="addons__head">
       <h1>Addons</h1>
       <p class="muted">

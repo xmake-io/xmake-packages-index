@@ -14,6 +14,7 @@ const { stats } = useStats()
         <span v-if="stats"> · updated {{ stats.generated_at.slice(0, 10) }}</span>
       </div>
       <div class="links">
+        <RouterLink to="/categories">Package categories</RouterLink>
         <a :href="config.site.github" target="_blank" rel="noopener">xmake-repo</a>
         <a :href="config.site.indexRepo" target="_blank" rel="noopener">Site source</a>
         <a :href="config.site.docsHome">Xmake documentation</a>

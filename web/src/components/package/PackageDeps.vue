@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import CollapsibleList from '../ui/CollapsibleList.vue'
-import { useIndex } from '@/composables/useIndex'
+import { useIndex, useAddons } from '@/composables/useIndex'
 const { index } = useIndex()
-const names = computed(() => new Set(index.value?.packages.map(p => p.name) ?? []))
+const { addons } = useAddons()
+const names = computed(() => new Set((props.addon ? addons.value?.addons : index.value?.packages)?.map(p => p.name) ?? []))
 const dependencyName = (spec: string) => spec.trim().split(/\s+/)[0]
-defineProps<{ deps: string[] }>()
+const props = defineProps<{ deps: string[]; addon?: boolean }>()
 </script>
 
 <template>
@@ -15,7 +16,7 @@ defineProps<{ deps: string[] }>()
     <RouterLink
       v-if="names.has(dependencyName(d))"
       class="chip"
-      :to="{ name: 'package-detail', params: { name: dependencyName(d) } }"
+      :to="{ name: addon ? 'addon-detail' : 'package-detail', params: { name: dependencyName(d) } }"
     >{{ d }}</RouterLink>
     <span v-else class="chip">{{ d }}</span>
     </template>

@@ -13,6 +13,9 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/PackageDetailView.vue'),
     props: true,
   },
+  { path: '/categories', name: 'categories', component: () => import('@/views/CategoriesView.vue') },
+  { path: '/categories/:slug', name: 'category', component: () => import('@/views/CategoryView.vue') },
+  { path: '/categories/:slug/page/:page', name: 'category-page', component: () => import('@/views/CategoryView.vue') },
   { path: '/addons', name: 'addons', component: () => import('@/views/AddonsView.vue') },
   {
     path: '/addons/:name',

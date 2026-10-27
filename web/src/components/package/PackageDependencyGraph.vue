@@ -3,11 +3,12 @@ import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { useIndex } from '@/composables/useIndex'
 import PackageRelationsList from './PackageRelationsList.vue'
 import { dependencyGraph } from '../../../shared/dependency-graph.mjs'
-const props = defineProps<{ name: string; relations: Record<string, string[]> }>()
+const props = defineProps<{ name: string; relations: Record<string, string[]>; addon?: boolean }>()
 const { index } = useIndex()
 const packageKinds = computed(() => new Map(index.value?.packages.map(pkg => [pkg.name, pkg.kind]) ?? []))
-const kindLabels: Record<string, string> = { library: 'Library', binary: 'Binary', toolchain: 'Toolchain', phony: 'Phony', other: 'Other' }
+const kindLabels: Record<string, string> = { library: 'Library', binary: 'Binary', toolchain: 'Toolchain', phony: 'Phony', other: 'Other', addon: 'Addon' }
 function nodeKind(name: string) {
+  if (props.addon) return 'addon'
   const kind = packageKinds.value.get(name) || 'library'
   return Object.hasOwn(kindLabels, kind) ? kind : 'other'
 }
@@ -101,9 +102,9 @@ function onKeydown(event: KeyboardEvent) {
 }
 </script>
 <template>
-  <section class="dependency-graph" aria-label="Package dependency graph">
+  <section class="dependency-graph" :aria-label="addon ? 'Addon dependency graph' : 'Package dependency graph'">
     <header class="graph-head">
-      <div><h2>Dependency graph</h2><p>{{ vertical ? 'Dependents ↓ current package ↓ dependencies' : 'Dependents → current package → dependencies' }}</p></div>
+      <div><h2>Dependency graph</h2><p>{{ vertical ? (addon ? 'Dependents ↓ current addon ↓ dependencies' : 'Dependents ↓ current package ↓ dependencies') : (addon ? 'Dependents → current addon → dependencies' : 'Dependents → current package → dependencies') }}</p></div>
       <div class="graph-modes" aria-label="Graph scope">
         <button :aria-pressed="!full" @click="full = false">Direct</button>
         <button :aria-pressed="full" @click="full = true">Include indirect</button>
@@ -111,12 +112,12 @@ function onKeydown(event: KeyboardEvent) {
     </header>
     <div class="graph-legend" aria-label="Package types">
       <span v-for="kind in visibleKinds" :key="kind" :class="'kind-' + kind"><i aria-hidden="true"></i>{{ kindLabels[kind] }}</span>
-      <span class="legend-current"><i aria-hidden="true"></i>Current package</span>
+      <span class="legend-current"><i aria-hidden="true"></i>{{ addon ? 'Current addon' : 'Current package' }}</span>
     </div>
     <p v-if="graph.cycleCount" class="graph-cycle-note" role="status">↻ {{ graph.cycleCount }} dependency cycle group{{ graph.cycleCount > 1 ? 's' : '' }} detected · amber nodes and dashed links mark cycles</p>
     <div class="graph-surface">
       <div class="graph-tools">
-        <span aria-live="polite">{{ graph.nodes.length }} / {{ graph.total }} packages · {{ graph.edges.length }} links</span>
+        <span aria-live="polite">{{ graph.nodes.length }} / {{ graph.total }} {{ addon ? 'addons' : 'packages' }} · {{ graph.edges.length }} links</span>
         <div>
           <button aria-label="Zoom out" @click="zoom(1.3)">−</button>
           <button aria-label="Zoom in" @click="zoom(1 / 1.3)">+</button>
@@ -129,24 +130,24 @@ function onKeydown(event: KeyboardEvent) {
         <g class="graph-edges" aria-hidden="true">
           <path v-for="edge in graph.edges" :key="edge.source + ':' + edge.target" :d="edgePath(edge.source, edge.target)" :marker-end="edge.cyclic ? 'url(#dependency-cycle-arrow)' : 'url(#dependency-arrow)'" :class="{ 'edge-cycle': edge.cyclic, 'edge-active': selected && (edge.source === selected || edge.target === selected), 'edge-muted': selected && edge.source !== selected && edge.target !== selected }" />
         </g>
-        <RouterLink v-for="node in graph.nodes" :key="node.name" :to="{ name: 'package-detail', params: { name: node.name } }" custom v-slot="{ href, navigate }">
-          <a :href="href" @click="navigate" class="graph-node" :class="{ ['kind-' + nodeKind(node.name)]: true, 'node-current': node.name === name, 'node-cycle': node.cyclic, 'node-muted': selected && !connected.has(node.name) }" :transform="`translate(${node.x}, ${node.y})`" @mouseenter="selected = node.name" @mouseleave="selected = ''" @focus="selected = node.name" @blur="selected = ''" :aria-label="node.name + ', ' + kindLabels[nodeKind(node.name)] + (node.name === name ? ', current package' : '') + (node.cyclic ? ', cyclic dependency' : '')">
-            <title>{{ node.name }} — {{ kindLabels[nodeKind(node.name)] }}{{ node.name === name ? ' — current package' : '' }}{{ node.cyclic ? ' — cyclic dependency' : '' }}</title>
+        <RouterLink v-for="node in graph.nodes" :key="node.name" :to="{ name: addon ? 'addon-detail' : 'package-detail', params: { name: node.name } }" custom v-slot="{ href, navigate }">
+          <a :href="href" @click="navigate" class="graph-node" :class="{ ['kind-' + nodeKind(node.name)]: true, 'node-current': node.name === name, 'node-cycle': node.cyclic, 'node-muted': selected && !connected.has(node.name) }" :transform="`translate(${node.x}, ${node.y})`" @mouseenter="selected = node.name" @mouseleave="selected = ''" @focus="selected = node.name" @blur="selected = ''" :aria-label="node.name + ', ' + kindLabels[nodeKind(node.name)] + (node.name === name ? (addon ? ', current addon' : ', current package') : '') + (node.cyclic ? ', cyclic dependency' : '')">
+            <title>{{ node.name }} — {{ kindLabels[nodeKind(node.name)] }}{{ node.name === name ? (addon ? ' — current addon' : ' — current package') : '' }}{{ node.cyclic ? ' — cyclic dependency' : '' }}</title>
             <rect x="-94" y="-20" width="188" height="40" rx="10" />
             <circle v-if="node.name === name" cx="-77" cy="0" r="3" />
             <text text-anchor="middle" dominant-baseline="central">{{ node.name.length > 23 ? node.name.slice(0, 21) + '…' : node.name }}</text>
           </a>
         </RouterLink>
       </svg>
-      <p class="graph-hint">{{ graph.edges.length ? 'Drag to explore · select a package to open its details' : 'No indexed dependency relationships for this package.' }}</p>
+      <p class="graph-hint">{{ graph.edges.length ? 'Drag to explore · select a package to open its details' : (addon ? 'No indexed addon dependencies.' : 'No indexed dependency relationships for this package.') }}</p>
     </div>
     <div v-if="graph.total > 7" class="graph-expand">
-      <span>{{ graph.total - graph.nodes.length }} packages not shown</span>
+      <span>{{ graph.total - graph.nodes.length }} {{ addon ? 'addons' : 'packages' }} not shown</span>
       <button v-if="graph.nodes.length < graph.total && visibleLimit < 61" @click="visibleLimit = Math.min(61, visibleLimit + (vertical ? 6 : 12))">Show {{ Math.min(vertical ? 6 : 12, graph.total - graph.nodes.length, 61 - visibleLimit) }} more</button>
       <button v-if="visibleLimit > 7" @click="visibleLimit = 7">Collapse</button>
-      <button :aria-expanded="browserOpen" @click="browserOpen = !browserOpen">{{ browserOpen ? 'Hide package list' : 'Find any related package' }}</button>
+      <button :aria-expanded="browserOpen" @click="browserOpen = !browserOpen">{{ browserOpen ? 'Hide package list' : (addon ? 'Find any related addon' : 'Find any related package') }}</button>
     </div>
-    <PackageRelationsList v-if="browserOpen" :names="graph.related" :reset-key="name + full" label="Find related packages" />
+    <PackageRelationsList v-if="browserOpen" :names="graph.related" :reset-key="name + full" :addon="addon" :label="addon ? 'Find related addons' : 'Find related packages'" />
     <p v-if="graph.total > 61" class="graph-note">The graph shows up to 60 related packages at a time. Search the complete list or open a package to explore its connections.</p>
     <p class="graph-note">{{ full ? 'Includes indirect relationships; expand to see more nodes.' : 'Shows direct dependents and dependencies.' }} Based on indexed recipes; requirements may vary by platform and configuration.</p>
   </section>
@@ -203,6 +204,7 @@ marker .cycle-arrow { fill: var(--graph-cycle); }
 .kind-library { --node-color: var(--c-brand-3); }
 .kind-binary { --node-color: var(--node-binary); }
 .kind-toolchain { --node-color: var(--node-toolchain); }
+.kind-addon { --node-color: #8b879f; }
 .kind-phony, .kind-other { --node-color: var(--node-phony); }
 .graph-legend { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 0 0 12px; font-size: 12px; color: var(--c-text-3); }
 .graph-legend span { display: inline-flex; align-items: center; gap: 6px; }

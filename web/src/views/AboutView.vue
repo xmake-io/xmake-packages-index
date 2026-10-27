@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PageBreadcrumbs from '@/components/ui/PageBreadcrumbs.vue'
 import { config } from '@/config'
 import { useStats } from '@/composables/useIndex'
 
@@ -7,6 +8,7 @@ const { stats } = useStats()
 
 <template>
   <div class="container about">
+    <PageBreadcrumbs />
     <h1>About</h1>
     <p>
       {{ config.site.name }} is an automatically generated, browsable index of

@@ -2,12 +2,17 @@
 import { computed, watchEffect } from 'vue'
 import { updatePageSeo } from '@/lib/seo'
 import { useAddon } from '@/composables/usePackage'
+import PageBreadcrumbs from '@/components/ui/PageBreadcrumbs.vue'
+import PackageDependents from '@/components/package/PackageDependents.vue'
+import PackageConfigs from '@/components/package/PackageConfigs.vue'
+import PackagePlatforms from '@/components/package/PackagePlatforms.vue'
 import PackageMeta from '@/components/package/PackageMeta.vue'
 import PackageVersions from '@/components/package/PackageVersions.vue'
 import PackageUsage from '@/components/package/PackageUsage.vue'
 import PackageDeps from '@/components/package/PackageDeps.vue'
 import CodeBlock from '@/components/ui/CodeBlock.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
+import { quickUsage } from '@/lib/usage'
 import { config } from '@/config'
 
 const props = defineProps<{ name: string }>()
@@ -22,13 +27,7 @@ const recipeUrl = computed(() => {
 })
 
 // The one-line "give me this addon" snippet shown above the fold.
-const quickInstall = computed(() => {
-  const a = addon.value
-  if (!a) return ''
-  return a.latest_version
-    ? `xmake addon --install "${a.name} ${a.latest_version}"`
-    : `xmake addon --install ${a.name}`
-})
+const quickInstall = computed(() => addon.value ? quickUsage({...addon.value, kind:'addon'}).code : '')
 watchEffect(() => {
   if (error.value?.includes(': 404')) updatePageSeo('/404')
   else if (addon.value?.name === props.name) updatePageSeo('/addons/' + encodeURIComponent(props.name), addon.value)
@@ -40,11 +39,9 @@ watchEffect(() => {
     <LoadingState v-if="loading" />
     <div v-else-if="error" class="error">Failed to load addon: {{ error }}</div>
     <template v-else-if="addon">
+      <PageBreadcrumbs :entry="addon" />
       <header class="detail__head">
         <div>
-          <p class="detail__crumb">
-            <RouterLink :to="{ name: 'addons' }">Addons</RouterLink>
-          </p>
           <h1>{{ addon.name }}</h1>
           <p v-if="addon.description" class="detail__desc">{{ addon.description }}</p>
         </div>
@@ -69,16 +66,21 @@ watchEffect(() => {
         </section>
       </div>
 
-      <section v-if="addon.deps && addon.deps.length" class="detail__section">
+      <section class="detail__section">
         <h2>Dependencies</h2>
         <p class="muted detail__hint">The other addons which this one needs.</p>
-        <PackageDeps :deps="addon.deps" />
+        <PackageDeps :deps="addon.deps" addon />
       </section>
 
+      <section v-if="addon.configs?.length" class="detail__section"><h2>Options</h2><PackageConfigs :configs="addon.configs" /></section>
+      <section v-if="Object.keys(addon.platforms || {}).length" class="detail__section"><h2>Platforms</h2><PackagePlatforms :pkg="addon" /></section>
       <section class="detail__section">
         <h2>Install &amp; use</h2>
         <PackageUsage :pkg="addon" addon />
+        <p class="detail__hint"><a :href="config.site.docsHome + 'guide/extensions/addons/introduction.html'">Learn how to use addon commands, rules, toolchains and templates →</a></p>
       </section>
+
+      <PackageDependents :name="addon.name" addon />
 
       <section v-if="addon.package_source" class="detail__section">
         <h2>Addon recipe <span class="muted">xmake.lua</span></h2>
@@ -133,7 +135,7 @@ watchEffect(() => {
 
 .detail__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
   gap: var(--space-6);
 }
 

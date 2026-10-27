@@ -11,6 +11,8 @@ import PackageDependents from '@/components/package/PackageDependents.vue'
 import PackageDeps from '@/components/package/PackageDeps.vue'
 import CodeBlock from '@/components/ui/CodeBlock.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
+import { quickUsage } from '@/lib/usage'
+import PageBreadcrumbs from '@/components/ui/PageBreadcrumbs.vue'
 import { config } from '@/config'
 
 const props = defineProps<{ name: string }>()
@@ -33,13 +35,7 @@ const recipeUrl = computed(() => {
 // The one-line "give me the import" snippet shown above the fold. We pin the
 // version when available so the copied line is reproducible; otherwise we
 // fall back to the bare name so old packages without versions still work.
-const quickRequire = computed(() => {
-  const p = pkg.value
-  if (!p) return ''
-  return p.latest_version
-    ? `add_requires("${p.name} ${p.latest_version}")`
-    : `add_requires("${p.name}")`
-})
+const quick = computed(() => pkg.value ? quickUsage(pkg.value) : undefined)
 watchEffect(() => {
   if (error.value?.includes(': 404')) updatePageSeo('/404')
   else if (pkg.value?.name === props.name) updatePageSeo('/packages/' + encodeURIComponent(props.name), pkg.value)
@@ -51,6 +47,7 @@ watchEffect(() => {
     <LoadingState v-if="loading" />
     <div v-else-if="error" class="error">Failed to load package: {{ error }}</div>
     <template v-else-if="pkg">
+      <PageBreadcrumbs :entry="pkg" />
       <header class="detail__head">
         <div>
           <h1>{{ pkg.name }}</h1>
@@ -66,8 +63,8 @@ watchEffect(() => {
       <!-- Hero copy-the-import line. Most visitors land here knowing exactly
            what they want: the single add_requires call for their xmake.lua. -->
       <section class="quick">
-        <CodeBlock :code="quickRequire" language="lua" title="Add to xmake.lua" />
-        <p class="integration-guide">New to Xmake? <a :href="config.site.docs">Learn how to add and link packages →</a></p>
+        <CodeBlock v-if="quick" :code="quick.code" :language="quick.language" :title="quick.title" />
+        <p class="integration-guide">New to Xmake? <a :href="config.site.docs">Package management guide →</a></p>
       </section>
 
       <div class="detail__grid">
@@ -99,7 +96,7 @@ watchEffect(() => {
 
       <section class="detail__section">
         <h2>Install &amp; integrate</h2>
-        <p class="muted detail__hint">Walkthroughs for the three common workflows.</p>
+        <p class="muted detail__hint">Installation and setup for this package type.</p>
         <PackageUsage :pkg="pkg" />
       </section>
 

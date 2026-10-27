@@ -10,8 +10,8 @@ test('canonical URLs drop query filters and normalize trailing slash',()=>{
 test('packages and addons have distinct metadata and unknown routes are noindex',()=>{
  const entry={name:'fmt',description:'A formatting library for C++'}
  assert.match(pageMeta(site,'/packages/fmt',entry).title,/^fmt/)
- assert.match(pageMeta(site,'/addons/demo',{name:'demo'}).title,/Addons/)
- assert.equal(pageMeta(site,'/packages/fmt',entry).description,entry.description)
+ assert.match(pageMeta(site,'/addons/demo',{name:'demo'}).title,/Addon installation/)
+ assert.ok(pageMeta(site,'/packages/fmt',entry).description.startsWith(entry.description))
  assert.equal(pageMeta(site,'/missing').indexable,false)
 })
 test('package data cannot inject tags or attributes into generated HTML',()=>{

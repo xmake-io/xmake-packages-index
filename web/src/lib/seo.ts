@@ -1,7 +1,7 @@
 import { config } from '@/config'
-import { pageMeta } from '../../shared/seo.mjs'
+import { pageMeta, breadcrumbJson } from '../../shared/seo.mjs'
 
-export function updatePageSeo(path: string, entry?: {name: string; description?: string}) {
+export function updatePageSeo(path: string, entry?: {name: string; description?: string; kind?: string}) {
   const meta = pageMeta(config.site, path, entry)
   document.title = meta.title
   const tags: [string, string, string][] = [
@@ -18,4 +18,11 @@ export function updatePageSeo(path: string, entry?: {name: string; description?:
   let canonical = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]')
   if (!canonical) { canonical = document.createElement('link'); canonical.rel = 'canonical'; document.head.append(canonical) }
   canonical.href = meta.canonical
+  let schema = document.head.querySelector<HTMLScriptElement>('#page-breadcrumbs')
+  const json = breadcrumbJson(meta, config.site.url)
+  if (!json) schema?.remove()
+  else {
+    if (!schema) { schema = document.createElement('script'); schema.id = 'page-breadcrumbs'; schema.type = 'application/ld+json'; document.head.append(schema) }
+    schema.textContent = json
+  }
 }

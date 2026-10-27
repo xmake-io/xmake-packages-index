@@ -25,3 +25,5 @@ export const loadAddon = (name: string) =>
   fetchJson<AddonDetail>(`addons/${encodeURIComponent(name)}.json`)
 
 export const loadRelations = () => fetchJson<Record<string, string[]>>('package-relations.json')
+
+export const loadAddonRelations = () => fetchJson<Record<string, string[]>>('addon-relations.json')

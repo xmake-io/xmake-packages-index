@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PageBreadcrumbs from '@/components/ui/PageBreadcrumbs.vue'
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useIndex } from '@/composables/useIndex'
@@ -149,12 +150,15 @@ const hasFilters = computed(
 
 <template>
   <div class="container packages">
+    <PageBreadcrumbs />
     <header class="packages__head">
       <h1>Packages</h1>
       <p v-if="index" class="muted">
         {{ filtered.length }} / {{ index.count }} matched
       </p>
     </header>
+
+    <p class="category-link"><RouterLink to="/categories">Browse by type: libraries, tools, toolchains and addons →</RouterLink></p>
 
     <div class="filters">
       <input
@@ -224,6 +228,7 @@ const hasFilters = computed(
 </template>
 
 <style scoped>
+.category-link { margin: 0 0 20px; font-size: 13px; }
 .packages__head {
   display: flex;
   align-items: baseline;

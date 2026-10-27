@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import PackageDeps from './PackageDeps.vue'
-const props = defineProps<{ names: string[]; resetKey: string; label: string }>()
+const props = defineProps<{ names: string[]; resetKey: string; label: string; addon?: boolean }>()
 const query = ref('')
 const page = ref(0)
 const pageSize = 12
@@ -18,7 +18,7 @@ watch(pages, total => { page.value = Math.min(page.value, total - 1) })
 <template>
   <div class="relations-list">
     <input v-if="names.length > pageSize" v-model="query" type="search" :aria-label="label" :placeholder="label + '…'" />
-    <PackageDeps v-if="visible.length" :deps="visible" />
+    <PackageDeps v-if="visible.length" :deps="visible" :addon="addon" />
     <p v-else class="empty" role="status">No matching packages.</p>
     <nav v-if="names.length > pageSize" class="relations-pages" :aria-label="label + ' pagination'">
       <span aria-live="polite">{{ filtered.length ? page * pageSize + 1 : 0 }}–{{ Math.min((page + 1) * pageSize, filtered.length) }} / {{ filtered.length }}</span>
