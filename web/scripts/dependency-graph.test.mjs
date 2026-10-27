@@ -35,3 +35,35 @@ test('long chains are traversed iteratively without recursion overflow', () => {
  assert.equal(graph.nodes.length,5000)
  assert.equal(graph.cycleCount,0)
 })
+test('large fan-in stays bounded while every related name remains discoverable', () => {
+ const users=Array.from({length:2000},(_,i)=>'package'+String(i).padStart(4,'0'))
+ const relations=Object.fromEntries([['cmake',users],...users.map(name=>[name,[]])])
+ const small=dependencyGraph(relations,'cmake',false,false,13)
+ assert.equal(small.nodes.length,13)
+ assert.equal(small.edges.length,12)
+ assert.equal(small.total,2001)
+ assert.equal(small.related.length,2000)
+ const expanded=dependencyGraph(relations,'cmake',true,false,61)
+ assert.equal(expanded.nodes.length,61)
+ assert.ok(small.nodes.every(n=>expanded.nodes.some(x=>x.name===n.name)))
+ assert.equal(dependencyGraph(relations,'cmake',false,true,7).nodes.length,7)
+})
+test('cycle membership is retained when the visible graph is capped', () => {
+ const graph=dependencyGraph({a:['b'],b:['a','c'],c:[]},'a',true,false,2)
+ assert.equal(graph.nodes.length,2)
+ assert.equal(graph.edges.filter(e=>e.cyclic).length,2)
+ assert.equal(graph.cycleCount,1)
+})
+test('mobile fan-in uses two columns with non-overlapping nodes inside its bounds', () => {
+ const users=['a','b','c','d','e','f']
+ const relations=Object.fromEntries([['cmake',users],...users.map(n=>[n,[]])])
+ const graph=dependencyGraph(relations,'cmake',false,true,7)
+ for(const node of graph.nodes){
+  assert.ok(node.x>=94&&node.x+94<=graph.width)
+  assert.ok(node.y>=20&&node.y+20<=graph.height)
+ }
+ for(let i=0;i<graph.nodes.length;i++) for(let j=i+1;j<graph.nodes.length;j++){
+  const a=graph.nodes[i],b=graph.nodes[j]
+  assert.ok(Math.abs(a.x-b.x)>=188||Math.abs(a.y-b.y)>=40)
+ }
+})

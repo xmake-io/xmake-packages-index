@@ -40,15 +40,22 @@ export function cyclicComponents(relations) {
   return cycles
 }
 
+const prepared = new WeakMap()
+
 // Lay out the selected package's incoming/outgoing dependency chains.
 // Breadth-first traversal keeps cycles finite and each package appears once.
-export function dependencyGraph(relations, current, full = false, vertical = false) {
-  if (!Object.hasOwn(relations, current)) return { nodes: [], edges: [], cycleCount: 0, width: 480, height: 300 }
-  const dependencies = Object.fromEntries(Object.keys(relations).map(name => [name, []]))
-  for (const [dependency, parents] of Object.entries(relations)) {
-    for (const parent of parents) if (Object.hasOwn(dependencies, parent)) dependencies[parent].push(dependency)
+export function dependencyGraph(relations, current, full = false, vertical = false, maxNodes = Infinity) {
+  if (!Object.hasOwn(relations, current)) return { nodes: [], edges: [], cycleCount: 0, total: 0, related: [], width: 480, height: 300 }
+  let cached = prepared.get(relations)
+  if (!cached) {
+    const dependencies = Object.fromEntries(Object.keys(relations).map(name => [name, []]))
+    for (const [dependency, parents] of Object.entries(relations)) {
+      for (const parent of parents) if (Object.hasOwn(dependencies, parent)) dependencies[parent].push(dependency)
+    }
+    cached = { dependencies, cycles: cyclicComponents(relations) }
+    prepared.set(relations, cached)
   }
-  const cycles = cyclicComponents(relations)
+  const { dependencies, cycles } = cached
   const levels = new Map([[current, 0]])
   function visit(adjacency, direction) {
     const visited = new Set([current])
@@ -66,22 +73,34 @@ export function dependencyGraph(relations, current, full = false, vertical = fal
   }
   visit(dependencies, 1)
   visit(relations, -1)
+  // Keep the closest layers first so expansion retains paths back to the root.
+  const related = [...levels.keys()].filter(name => name !== current).sort((a, b) =>
+    Math.abs(levels.get(a)) - Math.abs(levels.get(b)) || a.localeCompare(b))
+  const total = levels.size
+  const visible = new Set([current, ...related.slice(0, Math.max(0, maxNodes - 1))])
   const columns = new Map()
   for (const [name, level] of levels) {
+    if (!visible.has(name)) continue
     if (!columns.has(level)) columns.set(level, [])
     columns.get(level).push(name)
   }
   const min = Math.min(...columns.keys())
   const max = Math.max(...columns.keys())
   const horizontalHeight = Math.max(300, ...[...columns.values()].map(names => names.length * 58 + 64))
-  const width = vertical ? Math.max(400, ...[...columns.values()].map(names => names.length * 210 + 40)) : (max - min) * 250 + 240
-  const height = vertical ? (max - min) * 110 + 140 : horizontalHeight
+  const width = vertical ? Math.max(400, ...[...columns.values()].map(names => Math.min(2, names.length) * 210 + 40)) : (max - min) * 250 + 240
+  const verticalOffsets = new Map()
+  let verticalHeight = 20
+  for (const level of [...columns.keys()].sort((a, b) => a - b)) {
+    verticalOffsets.set(level, verticalHeight)
+    verticalHeight += Math.ceil(columns.get(level).length / 2) * 58 + 50
+  }
+  const height = vertical ? verticalHeight : horizontalHeight
   const nodes = [...columns.entries()].flatMap(([level, names]) => names.sort().map((name, i) => ({
-    name, level, cyclic: cycles.has(name), x: vertical ? width / 2 + (i - (names.length - 1) / 2) * 210 : 120 + (level - min) * 250, y: vertical ? 70 + (level - min) * 110 : height / 2 + (i - (names.length - 1) / 2) * 58,
+    name, level, cyclic: cycles.has(name), x: vertical ? width / 2 + (i % 2 - (Math.min(2, names.length - Math.floor(i / 2) * 2) - 1) / 2) * 210 : 120 + (level - min) * 250, y: vertical ? verticalOffsets.get(level) + 30 + Math.floor(i / 2) * 58 : height / 2 + (i - (names.length - 1) / 2) * 58,
   })))
   const edges = []
-  for (const [target, parents] of Object.entries(relations)) if (levels.has(target)) {
-    for (const source of parents) if (levels.has(source)) edges.push({ source, target, cyclic: cycles.has(source) && cycles.get(source) === cycles.get(target) })
+  for (const [target, parents] of Object.entries(relations)) if (visible.has(target)) {
+    for (const source of parents) if (visible.has(source)) edges.push({ source, target, cyclic: cycles.has(source) && cycles.get(source) === cycles.get(target) })
   }
-  return { nodes, edges, cycleCount: new Set(nodes.filter(n => n.cyclic).map(n => cycles.get(n.name))).size, width, height }
+  return { nodes, edges, total, related, cycleCount: new Set(nodes.filter(n => n.cyclic).map(n => cycles.get(n.name))).size, width, height }
 }

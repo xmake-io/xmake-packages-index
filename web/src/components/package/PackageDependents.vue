@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { loadRelations } from '@/lib/data'
-import PackageDeps from './PackageDeps.vue'
+import PackageRelationsList from './PackageRelationsList.vue'
 import PackageDependencyGraph from './PackageDependencyGraph.vue'
 const props = defineProps<{ name: string }>()
 const relations = ref<Record<string, string[]>>({})
@@ -12,16 +12,12 @@ onMounted(async () => {
 })
 </script>
 <template>
-  <PackageDependencyGraph v-if="Object.hasOwn(relations, name)" :name="name" :relations="relations" />
   <section v-if="dependents.length" class="dependents">
     <h2>Used by <span>({{ dependents.length }})</span></h2>
     <p>Packages declaring this dependency; requirements can vary by platform and configuration.</p>
-    <PackageDeps :deps="dependents.slice(0, 12)" />
-    <details v-if="dependents.length > 12" :key="name">
-      <summary>Show {{ dependents.length - 12 }} more</summary>
-      <PackageDeps :deps="dependents.slice(12)" />
-    </details>
+    <PackageRelationsList :names="dependents" :reset-key="name" label="Search dependent packages" />
   </section>
+  <PackageDependencyGraph v-if="Object.hasOwn(relations, name)" :name="name" :relations="relations" />
 </template>
 <style scoped>
 .dependents { margin: var(--space-8) 0; }

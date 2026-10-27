@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
+import PackageRelationsList from './PackageRelationsList.vue'
 import { dependencyGraph } from '../../../shared/dependency-graph.mjs'
 const props = defineProps<{ name: string; relations: Record<string, string[]> }>()
 const full = ref(false)
 const vertical = ref(false)
-const graph = computed(() => dependencyGraph(props.relations, props.name, full.value, vertical.value))
+const visibleLimit = ref(7)
+const browserOpen = ref(false)
+const graph = computed(() => dependencyGraph(props.relations, props.name, full.value, vertical.value, visibleLimit.value))
 const byName = computed(() => new Map(graph.value.nodes.map(node => [node.name, node])))
 const view = ref({ x: 0, y: 0, width: 900, height: 420 })
 const svg = ref<SVGSVGElement>()
@@ -29,9 +32,10 @@ function focusCurrent() {
   const y = graph.value.height > height ? Math.max(0, Math.min(graph.value.height - height, node.y - height / 2)) : (graph.value.height - height) / 2
   view.value = { x, y, width, height }
 }
-watch(() => props.name, () => { full.value = false; selected.value = '' })
+watch(() => props.name, () => { full.value = false; selected.value = ''; browserOpen.value = false })
+watch([full, vertical, () => props.name], () => { visibleLimit.value = 7 })
 function resetView() {
-  if (full.value || graph.value.nodes.length > 18 || (svg.value && svg.value.clientWidth < 600)) focusCurrent()
+  if (graph.value.nodes.length > (vertical.value ? 7 : 18)) focusCurrent()
   else fit()
 }
 watch(graph, resetView, { immediate: true })
@@ -93,17 +97,17 @@ function onKeydown(event: KeyboardEvent) {
       <div><h2>Dependency graph</h2><p>{{ vertical ? 'Dependents ↓ current package ↓ dependencies' : 'Dependents → current package → dependencies' }}</p></div>
       <div class="graph-modes" aria-label="Graph scope">
         <button :aria-pressed="!full" @click="full = false">Direct</button>
-        <button :aria-pressed="full" @click="full = true">Full dependency chain</button>
+        <button :aria-pressed="full" @click="full = true">Include indirect</button>
       </div>
     </header>
     <p v-if="graph.cycleCount" class="graph-cycle-note" role="status">↻ {{ graph.cycleCount }} dependency cycle group{{ graph.cycleCount > 1 ? 's' : '' }} detected · amber nodes and dashed links mark cycles</p>
     <div class="graph-surface">
       <div class="graph-tools">
-        <span aria-live="polite">{{ graph.nodes.length }} packages · {{ graph.edges.length }} links</span>
+        <span aria-live="polite">{{ graph.nodes.length }} / {{ graph.total }} packages · {{ graph.edges.length }} links</span>
         <div>
           <button aria-label="Zoom out" @click="zoom(1.3)">−</button>
           <button aria-label="Zoom in" @click="zoom(1 / 1.3)">+</button>
-          <button @click="fit">Fit all</button>
+          <button @click="fit">Fit visible</button>
           <button @click="focusCurrent">Locate {{ name }}</button>
         </div>
       </div>
@@ -123,7 +127,15 @@ function onKeydown(event: KeyboardEvent) {
       </svg>
       <p class="graph-hint">{{ graph.edges.length ? 'Drag to explore · select a package to open its details' : 'No indexed dependency relationships for this package.' }}</p>
     </div>
-    <p class="graph-note">{{ full ? 'Includes indirect dependents and dependencies of this package.' : 'Shows direct dependents and dependencies.' }} Based on indexed recipes; requirements may vary by platform and configuration.</p>
+    <div v-if="graph.total > 7" class="graph-expand">
+      <span>{{ graph.total - graph.nodes.length }} packages not shown</span>
+      <button v-if="graph.nodes.length < graph.total && visibleLimit < 61" @click="visibleLimit = Math.min(61, visibleLimit + (vertical ? 6 : 12))">Show {{ Math.min(vertical ? 6 : 12, graph.total - graph.nodes.length, 61 - visibleLimit) }} more</button>
+      <button v-if="visibleLimit > 7" @click="visibleLimit = 7">Collapse</button>
+      <button :aria-expanded="browserOpen" @click="browserOpen = !browserOpen">{{ browserOpen ? 'Hide package list' : 'Find any related package' }}</button>
+    </div>
+    <PackageRelationsList v-if="browserOpen" :names="graph.related" :reset-key="name + full" label="Find related packages" />
+    <p v-if="graph.total > 61" class="graph-note">The graph shows up to 60 related packages at a time. Search the complete list or open a package to explore its connections.</p>
+    <p class="graph-note">{{ full ? 'Includes indirect relationships; expand to see more nodes.' : 'Shows direct dependents and dependencies.' }} Based on indexed recipes; requirements may vary by platform and configuration.</p>
   </section>
 </template>
 <style scoped>
@@ -155,8 +167,10 @@ marker path { fill: var(--c-text-mute); }
 .node-current text, .node-current circle { fill: var(--c-brand-3); font-weight: 600; }
 .node-muted { opacity: .3; }
 .graph-hint { text-align: center; padding: 10px; }
+.graph-expand { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-top: 10px; font-size: 12px; color: var(--c-text-3); }
+.graph-expand button { background: var(--c-brand-soft); color: var(--c-brand-3); }
 .graph-note { margin-top: 9px; line-height: 1.6; }
-@media (max-width: 640px) { .graph-canvas { height: 360px; } .graph-tools { padding: 8px; } button { padding: 8px; } }
+@media (max-width: 640px) { .graph-canvas { height: 360px; } .graph-node text { font-size: 13px; } .graph-tools { padding: 8px; } button { padding: 8px; } }
 </style>
 
 <style scoped>

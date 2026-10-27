@@ -97,13 +97,13 @@ watchEffect(() => {
         </section>
       </div>
 
-      <PackageDependents :name="pkg.name" />
-
       <section class="detail__section">
         <h2>Install &amp; integrate</h2>
         <p class="muted detail__hint">Walkthroughs for the three common workflows.</p>
         <PackageUsage :pkg="pkg" />
       </section>
+
+      <PackageDependents :name="pkg.name" />
 
       <section v-if="pkg.package_source" class="detail__section">
         <h2>Package recipe <span class="muted">xmake.lua</span></h2>
