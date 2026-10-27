@@ -1,8 +1,17 @@
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
+import { useIndex } from '@/composables/useIndex'
 import PackageRelationsList from './PackageRelationsList.vue'
 import { dependencyGraph } from '../../../shared/dependency-graph.mjs'
 const props = defineProps<{ name: string; relations: Record<string, string[]> }>()
+const { index } = useIndex()
+const packageKinds = computed(() => new Map(index.value?.packages.map(pkg => [pkg.name, pkg.kind]) ?? []))
+const kindLabels: Record<string, string> = { library: 'Library', binary: 'Binary', toolchain: 'Toolchain', phony: 'Phony', other: 'Other' }
+function nodeKind(name: string) {
+  const kind = packageKinds.value.get(name) || 'library'
+  return Object.hasOwn(kindLabels, kind) ? kind : 'other'
+}
+const visibleKinds = computed(() => [...new Set(graph.value.nodes.map(node => nodeKind(node.name)))])
 const full = ref(false)
 const vertical = ref(false)
 const visibleLimit = ref(7)
@@ -100,6 +109,10 @@ function onKeydown(event: KeyboardEvent) {
         <button :aria-pressed="full" @click="full = true">Include indirect</button>
       </div>
     </header>
+    <div class="graph-legend" aria-label="Package types">
+      <span v-for="kind in visibleKinds" :key="kind" :class="'kind-' + kind"><i aria-hidden="true"></i>{{ kindLabels[kind] }}</span>
+      <span class="legend-current"><i aria-hidden="true"></i>Current package</span>
+    </div>
     <p v-if="graph.cycleCount" class="graph-cycle-note" role="status">↻ {{ graph.cycleCount }} dependency cycle group{{ graph.cycleCount > 1 ? 's' : '' }} detected · amber nodes and dashed links mark cycles</p>
     <div class="graph-surface">
       <div class="graph-tools">
@@ -117,8 +130,8 @@ function onKeydown(event: KeyboardEvent) {
           <path v-for="edge in graph.edges" :key="edge.source + ':' + edge.target" :d="edgePath(edge.source, edge.target)" :marker-end="edge.cyclic ? 'url(#dependency-cycle-arrow)' : 'url(#dependency-arrow)'" :class="{ 'edge-cycle': edge.cyclic, 'edge-active': selected && (edge.source === selected || edge.target === selected), 'edge-muted': selected && edge.source !== selected && edge.target !== selected }" />
         </g>
         <RouterLink v-for="node in graph.nodes" :key="node.name" :to="{ name: 'package-detail', params: { name: node.name } }" custom v-slot="{ href, navigate }">
-          <a :href="href" @click="navigate" class="graph-node" :class="{ 'node-current': node.name === name, 'node-cycle': node.cyclic, 'node-muted': selected && !connected.has(node.name) }" :transform="`translate(${node.x}, ${node.y})`" @mouseenter="selected = node.name" @mouseleave="selected = ''" @focus="selected = node.name" @blur="selected = ''" :aria-label="node.name + (node.name === name ? ', current package' : '') + (node.cyclic ? ', cyclic dependency' : '')">
-            <title>{{ node.name }}{{ node.name === name ? ' — current package' : '' }}{{ node.cyclic ? ' — cyclic dependency' : '' }}</title>
+          <a :href="href" @click="navigate" class="graph-node" :class="{ ['kind-' + nodeKind(node.name)]: true, 'node-current': node.name === name, 'node-cycle': node.cyclic, 'node-muted': selected && !connected.has(node.name) }" :transform="`translate(${node.x}, ${node.y})`" @mouseenter="selected = node.name" @mouseleave="selected = ''" @focus="selected = node.name" @blur="selected = ''" :aria-label="node.name + ', ' + kindLabels[nodeKind(node.name)] + (node.name === name ? ', current package' : '') + (node.cyclic ? ', cyclic dependency' : '')">
+            <title>{{ node.name }} — {{ kindLabels[nodeKind(node.name)] }}{{ node.name === name ? ' — current package' : '' }}{{ node.cyclic ? ' — cyclic dependency' : '' }}</title>
             <rect x="-94" y="-20" width="188" height="40" rx="10" />
             <circle v-if="node.name === name" cx="-77" cy="0" r="3" />
             <text text-anchor="middle" dominant-baseline="central">{{ node.name.length > 23 ? node.name.slice(0, 21) + '…' : node.name }}</text>
@@ -159,12 +172,13 @@ button:focus-visible, .graph-canvas:focus-visible { outline: 2px solid var(--c-b
 .graph-edges .edge-muted { opacity: .12; }
 marker path { fill: var(--c-text-mute); }
 .graph-node { cursor: pointer; }
-.graph-node rect { fill: var(--c-bg); stroke: var(--c-border); filter: drop-shadow(0 2px 3px rgb(0 0 0 / 5%)); }
+.graph-node rect { fill: color-mix(in srgb, var(--node-color) 9%, var(--c-bg)); stroke: color-mix(in srgb, var(--node-color) 45%, var(--c-border)); filter: drop-shadow(0 2px 3px rgb(0 0 0 / 5%)); }
 .graph-node text { fill: var(--c-text-2); font-size: 12px; font-family: var(--font-mono); pointer-events: none; }
-.graph-node:hover rect, .graph-node:focus rect { stroke: var(--c-brand-3); stroke-width: 2; }
+.graph-node:hover rect, .graph-node:focus rect { stroke: var(--node-color); stroke-width: 2; }
 .graph-node:focus { outline: none; }
-.node-current rect { fill: var(--c-brand-soft); stroke: var(--c-brand-3); stroke-width: 2; }
-.node-current text, .node-current circle { fill: var(--c-brand-3); font-weight: 600; }
+.node-current rect { stroke: var(--node-color); stroke-width: 2.5; }
+.node-current text { fill: var(--c-text-1); font-weight: 600; }
+.node-current circle { fill: var(--c-brand-3); }
 .node-muted { opacity: .3; }
 .graph-hint { text-align: center; padding: 10px; }
 .graph-expand { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-top: 10px; font-size: 12px; color: var(--c-text-3); }
@@ -179,6 +193,19 @@ marker path { fill: var(--c-text-mute); }
 .graph-edges .edge-cycle { stroke: var(--graph-cycle); stroke-dasharray: 5 3; opacity: .85; }
 .graph-edges .edge-cycle.edge-muted { opacity: .25; }
 marker .cycle-arrow { fill: var(--graph-cycle); }
-.node-cycle rect { stroke: var(--graph-cycle); stroke-width: 2; fill: var(--graph-cycle-soft); }
-.node-cycle.node-current rect { fill: var(--c-brand-soft); stroke-width: 3; }
+.node-cycle rect { stroke: var(--graph-cycle); stroke-width: 2; stroke-dasharray: 5 3; }
+.node-cycle.node-current rect { stroke-width: 3; }
+</style>
+
+<style scoped>
+.dependency-graph { --node-binary: #5486a5; --node-toolchain: #8a77aa; --node-phony: #7e8792; }
+:global(html.dark .dependency-graph) { --node-binary: #83acc5; --node-toolchain: #b3a0d2; --node-phony: #a1acba; }
+.kind-library { --node-color: var(--c-brand-3); }
+.kind-binary { --node-color: var(--node-binary); }
+.kind-toolchain { --node-color: var(--node-toolchain); }
+.kind-phony, .kind-other { --node-color: var(--node-phony); }
+.graph-legend { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 0 0 12px; font-size: 12px; color: var(--c-text-3); }
+.graph-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.graph-legend i { width: 9px; height: 9px; border-radius: 3px; background: color-mix(in srgb, var(--node-color) 18%, var(--c-bg)); border: 1px solid var(--node-color); }
+.graph-legend .legend-current i { width: 6px; height: 6px; border-radius: 50%; background: var(--c-brand-3); border: 0; }
 </style>

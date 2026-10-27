@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import CollapsibleList from '../ui/CollapsibleList.vue'
 import type { PackageConfig } from '@/types'
 
-defineProps<{ configs: PackageConfig[] }>()
+const props = defineProps<{ configs: PackageConfig[] }>()
+const rows = computed(() => Array.isArray(props.configs) ? props.configs : [])
 
 function defaultText(v: unknown): string {
   if (v === null || v === undefined) return ''
@@ -16,11 +19,12 @@ function valuesText(v: unknown): string {
 </script>
 
 <template>
-  <div v-if="configs && configs.length" class="cfg-table">
+  <CollapsibleList v-if="rows.length" :count="rows.length" :limit="6" :reset-key="configs" label="options" v-slot="{ visibleCount }">
+  <div class="cfg-table">
     <div class="cfg-table__row cfg-table__row--head">
       <span>Name</span><span>Type</span><span>Default</span><span>Values</span><span>Description</span>
     </div>
-    <div v-for="c in configs" :key="c.name" class="cfg-table__row">
+    <div v-for="c in rows.slice(0, visibleCount)" :key="c.name" class="cfg-table__row">
       <code>{{ c.name }}</code>
       <span>{{ c.type ?? '' }}</span>
       <span>{{ defaultText(c.default) }}</span>
@@ -28,6 +32,7 @@ function valuesText(v: unknown): string {
       <span>{{ c.description ?? '' }}</span>
     </div>
   </div>
+  </CollapsibleList>
   <p v-else class="muted">No configurable options.</p>
 </template>
 
@@ -55,6 +60,7 @@ function valuesText(v: unknown): string {
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
+.cfg-table__row > * { min-width: 0; overflow-wrap: anywhere; }
 .cfg-table__row code { font-family: var(--font-mono); }
 .muted { color: var(--c-text-3); font-size: 14px; margin: 0; }
 

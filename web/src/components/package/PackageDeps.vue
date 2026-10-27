@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import CollapsibleList from '../ui/CollapsibleList.vue'
 import { useIndex } from '@/composables/useIndex'
 const { index } = useIndex()
 const names = computed(() => new Set(index.value?.packages.map(p => p.name) ?? []))
@@ -8,8 +9,9 @@ defineProps<{ deps: string[] }>()
 </script>
 
 <template>
-  <div v-if="deps && deps.length" class="deps">
-    <template v-for="d in deps" :key="d">
+  <CollapsibleList v-if="deps && deps.length" :count="deps.length" :limit="12" :reset-key="deps" label="dependencies" v-slot="{ visibleCount }">
+  <div class="deps">
+    <template v-for="d in deps.slice(0, visibleCount)" :key="d">
     <RouterLink
       v-if="names.has(dependencyName(d))"
       class="chip"
@@ -18,6 +20,7 @@ defineProps<{ deps: string[] }>()
     <span v-else class="chip">{{ d }}</span>
     </template>
   </div>
+  </CollapsibleList>
   <p v-else class="muted">No dependencies declared.</p>
 </template>
 
