@@ -87,7 +87,12 @@ function onSearch() {
       <nav id="site-navigation" class="nav" :class="{ 'nav--open': menuOpen }">
         <RouterLink :to="{ name: 'packages' }" @click="menuOpen = false">Packages</RouterLink>
         <RouterLink :to="{ name: 'addons' }" @click="menuOpen = false">Addons</RouterLink>
-        <a :href="config.site.docsHome + 'about/sponsor.html'" @click="menuOpen = false">Sponsors</a>
+        <a class="sponsors-link" :href="config.site.docsHome + 'about/sponsor.html'" @click="menuOpen = false">
+          <svg class="sponsors-heart" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2c-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+          </svg>
+          Sponsors
+        </a>
         <a :href="config.site.docs" target="_blank" rel="noopener">Package guide</a>
         <a :href="config.site.github" target="_blank" rel="noopener">GitHub</a>
       </nav>
@@ -205,6 +210,9 @@ function onSearch() {
 .nav a:hover {
   color: var(--c-brand-3);
 }
+
+.sponsors-link { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.sponsors-heart { flex: none; color: #db2777; }
 
 .docs-home { white-space: nowrap; font-size: 13px; font-weight: 600; }
 .docs-home:focus-visible { outline: 2px solid var(--c-brand-3); outline-offset: 4px; }
