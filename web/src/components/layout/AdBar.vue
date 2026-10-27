@@ -1,24 +1,21 @@
 <script setup lang="ts">
-// Carbon Ads slot — same code/placement as xmake-docs so accounting stays
-// unified when this site and xmake-docs share a domain. Carbon's snippet
-// renders inside whichever container its <script> tag is appended to, and
-// hides itself entirely when no campaign is available.
-
-import { onMounted, ref } from 'vue'
+import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { config } from '@/config'
-
+import { registerCarbonSlot } from '@/lib/carbonAds'
 defineProps<{ slotName?: string }>()
-
+const route = useRoute()
+const router = useRouter()
 const container = ref<HTMLElement | null>(null)
-
-onMounted(() => {
-  if (!container.value || container.value.hasChildNodes()) return
-  const s = document.createElement('script')
-  s.async = true
-  s.id = '_carbonads_js'
-  s.src = `//cdn.carbonads.com/carbon.js?serve=${config.ads.carbon.code}&placement=${config.ads.carbon.placement}`
-  container.value.appendChild(s)
+let slot: ReturnType<typeof registerCarbonSlot> | undefined
+onMounted(async () => {
+  await router.isReady()
+  if (container.value) slot = registerCarbonSlot(container.value, {
+    ...config.ads.carbon, path: route.path, minWidth: 1200,
+  })
 })
+watch(() => route.path, path => slot?.update(path), { flush: 'post' })
+onBeforeUnmount(() => slot?.dispose())
 </script>
 
 <template>
