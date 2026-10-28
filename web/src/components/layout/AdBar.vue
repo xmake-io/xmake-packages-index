@@ -3,7 +3,7 @@ import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { config } from '@/config'
 import { registerCarbonSlot } from '@/lib/carbonAds'
-defineProps<{ slotName?: string }>()
+const props = defineProps<{ slotName?: string; mobileFooter?: boolean }>()
 const route = useRoute()
 const router = useRouter()
 const container = ref<HTMLElement | null>(null)
@@ -11,7 +11,7 @@ let slot: ReturnType<typeof registerCarbonSlot> | undefined
 onMounted(async () => {
   await router.isReady()
   if (container.value) slot = registerCarbonSlot(container.value, {
-    ...config.ads.carbon, path: route.path, minWidth: 1200,
+    ...config.ads.carbon, path: route.path, minWidth: props.mobileFooter ? 0 : 1200,
   })
 })
 watch(() => route.path, path => slot?.update(path), { flush: 'post' })
@@ -19,7 +19,7 @@ onBeforeUnmount(() => slot?.dispose())
 </script>
 
 <template>
-  <aside class="ad-bar">
+  <aside class="ad-bar" :class="{ 'ad-bar--mobile-footer': mobileFooter }" aria-label="Advertisement">
     <div class="ad-bar__slot" ref="container" :data-slot="slotName"></div>
   </aside>
 </template>
@@ -84,5 +84,22 @@ onBeforeUnmount(() => slot?.dispose())
   text-transform: uppercase;
   text-align: center;
   border-top: 1px solid var(--c-border);
+}
+
+/* Use a compact, in-flow card below the package content on narrow screens. */
+.ad-bar--mobile-footer { display: none; }
+@media (max-width: 1199px) {
+  .ad-bar--mobile-footer {
+    display: block;
+    max-width: 400px;
+    margin: var(--space-8) auto 0;
+  }
+  .ad-bar--mobile-footer :deep(#carbonads .carbon-wrap) {
+    flex-direction: row;
+    align-items: center;
+  }
+  .ad-bar--mobile-footer :deep(#carbonads .carbon-img) { flex: 0 0 130px; }
+  .ad-bar--mobile-footer :deep(#carbonads .carbon-img img) { width: 130px; height: auto; }
+  .ad-bar--mobile-footer :deep(#carbonads .carbon-text) { min-width: 0; padding: var(--space-3); }
 }
 </style>

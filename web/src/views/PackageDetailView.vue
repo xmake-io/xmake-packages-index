@@ -2,6 +2,7 @@
 import { computed, watchEffect } from 'vue'
 import { updatePageSeo } from '@/lib/seo'
 import { usePackage } from '@/composables/usePackage'
+import AdBar from '@/components/layout/AdBar.vue'
 import PackageMeta from '@/components/package/PackageMeta.vue'
 import PackagePlatforms from '@/components/package/PackagePlatforms.vue'
 import PackageConfigs from '@/components/package/PackageConfigs.vue'
@@ -112,6 +113,7 @@ watchEffect(() => {
         </p>
         <CodeBlock :code="pkg.package_source" language="lua" title="xmake.lua" />
       </section>
+      <AdBar slot-name="package-footer" mobile-footer />
     </template>
   </div>
 </template>

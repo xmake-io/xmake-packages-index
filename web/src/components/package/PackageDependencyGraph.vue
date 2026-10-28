@@ -14,6 +14,7 @@ function nodeKind(name: string) {
 }
 const visibleKinds = computed(() => [...new Set(graph.value.nodes.map(node => nodeKind(node.name)))])
 const full = ref(false)
+const touchMove = ref(false)
 const vertical = ref(false)
 const visibleLimit = ref(7)
 const browserOpen = ref(false)
@@ -42,7 +43,7 @@ function focusCurrent() {
   const y = graph.value.height > height ? Math.max(0, Math.min(graph.value.height - height, node.y - height / 2)) : (graph.value.height - height) / 2
   view.value = { x, y, width, height }
 }
-watch(() => props.name, () => { full.value = false; selected.value = ''; browserOpen.value = false })
+watch(() => props.name, () => { full.value = false; touchMove.value = false; selected.value = ''; browserOpen.value = false })
 watch([full, vertical, () => props.name], () => { visibleLimit.value = 7 })
 function resetView() {
   if (graph.value.nodes.length > (vertical.value ? 7 : 18)) focusCurrent()
@@ -78,7 +79,7 @@ function edgePath(source: string, target: string) {
 }
 let drag: { x: number; y: number; vx: number; vy: number; scale: number } | undefined
 function startDrag(event: PointerEvent) {
-  if (event.button !== 0 || (event.target as Element).closest('a')) return
+  if ((event.pointerType === 'touch' && !touchMove.value) || event.button !== 0 || (event.target as Element).closest('a')) return
   const scale = svg.value?.getScreenCTM()?.a
   if (!scale) return
   svg.value?.focus()
@@ -119,13 +120,14 @@ function onKeydown(event: KeyboardEvent) {
       <div class="graph-tools">
         <span aria-live="polite">{{ graph.nodes.length }} / {{ graph.total }} {{ addon ? 'addons' : 'packages' }} · {{ graph.edges.length }} links</span>
         <div>
+          <button class="graph-touch-mode" :aria-pressed="touchMove" @click="touchMove = !touchMove; endDrag()">{{ touchMove ? 'Done moving' : 'Move graph' }}</button>
           <button aria-label="Zoom out" @click="zoom(1.3)">−</button>
           <button aria-label="Zoom in" @click="zoom(1 / 1.3)">+</button>
           <button @click="fit">Fit visible</button>
           <button @click="focusCurrent">Locate {{ name }}</button>
         </div>
       </div>
-      <svg ref="svg" class="graph-canvas" :viewBox="`${view.x} ${view.y} ${view.width} ${view.height}`" tabindex="0" role="group" :aria-label="`Dependency relationships for ${name}. Drag to pan or use arrow keys. Select a package to open its details.`" @pointerdown="startDrag" @pointermove="moveDrag" @pointerup="endDrag" @pointercancel="endDrag" @lostpointercapture="endDrag" @keydown="onKeydown">
+      <svg ref="svg" class="graph-canvas" :class="{ 'graph-canvas--touch-move': touchMove }" :viewBox="`${view.x} ${view.y} ${view.width} ${view.height}`" tabindex="0" role="group" :aria-label="`Dependency relationships for ${name}. Scroll the page with touch; enable Move graph to pan. Use mouse drag or arrow keys to pan. Select a package to open its details.`" @pointerdown="startDrag" @pointermove="moveDrag" @pointerup="endDrag" @pointercancel="endDrag" @lostpointercapture="endDrag" @keydown="onKeydown">
         <defs><marker id="dependency-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 8 4 L 0 8 z" /></marker><marker id="dependency-cycle-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="cycle-arrow" d="M 0 0 L 8 4 L 0 8 z" /></marker></defs>
         <g class="graph-edges" aria-hidden="true">
           <path v-for="edge in graph.edges" :key="edge.source + ':' + edge.target" :d="edgePath(edge.source, edge.target)" :marker-end="edge.cyclic ? 'url(#dependency-cycle-arrow)' : 'url(#dependency-arrow)'" :class="{ 'edge-cycle': edge.cyclic, 'edge-active': selected && (edge.source === selected || edge.target === selected), 'edge-muted': selected && edge.source !== selected && edge.target !== selected }" />
@@ -139,7 +141,7 @@ function onKeydown(event: KeyboardEvent) {
           </a>
         </RouterLink>
       </svg>
-      <p class="graph-hint">{{ graph.edges.length ? 'Drag to explore · select a package to open its details' : (addon ? 'No indexed addon dependencies.' : 'No indexed dependency relationships for this package.') }}</p>
+      <p class="graph-hint">{{ graph.edges.length ? (touchMove ? 'Drag to move the graph · tap Done moving to resume page scrolling' : 'Select a package to open its details · use the controls to explore') : (addon ? 'No indexed addon dependencies.' : 'No indexed dependency relationships for this package.') }}</p>
     </div>
     <div v-if="graph.total > 7" class="graph-expand">
       <span>{{ graph.total - graph.nodes.length }} {{ addon ? 'addons' : 'packages' }} not shown</span>
@@ -166,12 +168,18 @@ button:focus-visible, .graph-canvas:focus-visible { outline: 2px solid var(--c-b
 .graph-tools { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--c-divider); background: var(--c-bg); }
 .graph-tools > span { font-size: 12px; color: var(--c-text-3); }
 .graph-tools > div { display: flex; flex-wrap: wrap; }
-.graph-canvas { display: block; width: 100%; height: 420px; touch-action: none; cursor: grab; background-image: radial-gradient(var(--c-border) 0.7px, transparent 0.7px); background-size: 18px 18px; }
+.graph-canvas { display: block; width: 100%; height: 420px; touch-action: pan-y pinch-zoom; cursor: grab; background-image: radial-gradient(var(--c-border) 0.7px, transparent 0.7px); background-size: 18px 18px; }
 .graph-canvas:active { cursor: grabbing; }
 .graph-edges path { fill: none; stroke: var(--c-text-mute); stroke-width: 1.3; opacity: .45; }
 .graph-edges .edge-active { stroke: var(--c-brand-3); opacity: 1; stroke-width: 2; }
 .graph-edges .edge-muted { opacity: .12; }
 marker path { fill: var(--c-text-mute); }
+.graph-canvas--touch-move { touch-action: none; }
+.graph-touch-mode { display: none; }
+@media (any-pointer: coarse), (max-width: 640px) {
+  .graph-touch-mode { display: inline-block; }
+  .graph-touch-mode[aria-pressed="true"] { color: var(--c-brand-3); background: var(--c-brand-soft); }
+}
 .graph-node { cursor: pointer; }
 .graph-node rect { fill: color-mix(in srgb, var(--node-color) 9%, var(--c-bg)); stroke: color-mix(in srgb, var(--node-color) 45%, var(--c-border)); filter: drop-shadow(0 2px 3px rgb(0 0 0 / 5%)); }
 .graph-node text { fill: var(--c-text-2); font-size: 12px; font-family: var(--font-mono); pointer-events: none; }
